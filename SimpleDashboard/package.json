@@ -2,5 +2,19 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.99.1",
     "web-push": "^3.6.7"
+  },
+  "bin": "server.js",
+  "pkg": {
+    "assets": [
+      "index.html",
+      "manifest.json",
+      "icon.png",
+      "sw.js",
+      "version.json"
+    ],
+    "targets": [
+      "node18-win-x64"
+    ],
+    "outputPath": "dist"
   }
 }

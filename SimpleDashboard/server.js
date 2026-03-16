@@ -4,6 +4,64 @@ const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 
 const webpush = require('web-push');
+const https = require('https');
+
+// --- Auto-Update Check ---
+const REPO_VERSION_URL = 'https://raw.githubusercontent.com/somkid2042-star/EA_DASHBOARD_WEB/main/SimpleDashboard/version.json';
+
+function checkForUpdates() {
+    return new Promise((resolve) => {
+        try {
+            const localVersionData = JSON.parse(fs.readFileSync(path.join(__dirname, 'version.json'), 'utf8'));
+            const localVersion = localVersionData.version;
+
+            console.log(`[Updater] Checking for updates... (Current Version: ${localVersion})`);
+
+            https.get(REPO_VERSION_URL, (res) => {
+                let data = '';
+                res.on('data', chunk => { data += chunk; });
+                res.on('end', () => {
+                    try {
+                        if (res.statusCode === 200) {
+                            const remoteData = JSON.parse(data);
+                            const remoteVersion = remoteData.version;
+
+                            if (remoteVersion !== localVersion) {
+                                console.log('\n========================================================');
+                                console.log(`❌ OUTDATED VERSION DETECTED! ❌`);
+                                console.log(`Your Version: ${localVersion}`);
+                                console.log(`Latest Version: ${remoteVersion}`);
+                                console.log(`Please download the latest version from:`);
+                                console.log(`${remoteData.download_url}`);
+                                console.log('========================================================\n');
+                                console.log('Press any key to exit...');
+                                process.stdin.setRawMode(true);
+                                process.stdin.resume();
+                                process.stdin.on('data', process.exit.bind(process, 1));
+                            } else {
+                                console.log(`[Updater] You are using the latest version (${localVersion}).\n`);
+                                resolve();
+                            }
+                        } else {
+                            console.log(`[Updater] Could not check for updates (HTTP ${res.statusCode}). Starting anyway...`);
+                            resolve();
+                        }
+                    } catch (e) {
+                        console.log(`[Updater] Error parsing up-to-date data. Starting anyway...`);
+                        resolve();
+                    }
+                });
+            }).on('error', (err) => {
+                console.log(`[Updater] Network error checking updates: ${err.message}. Starting anyway...`);
+                resolve();
+            });
+        } catch (e) {
+            console.log(`[Updater] Could not read local version.json. Skipping check...`);
+            resolve();
+        }
+    });
+}
+// -----------------------
 
 const supabaseUrl = 'https://xnwyrleniqxdxomjsopw.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhud3lybGVuaXF4ZHhvbWpzb3B3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMTQ3MzMsImV4cCI6MjA4ODc5MDczM30.tx5gR29FfBLsuYCWUDEJy2QqIfDrtL5xG6ZLtXEYZTA';
@@ -480,46 +538,49 @@ const server = http.createServer(async (req, res) => {
 });
 
 const PORT = 3000;
-server.listen(PORT, async () => {
-    console.log(`\n===========================================`);
-    console.log(`✅ Simple Web App is running!`);
-    console.log(`Open your browser and visit: http://localhost:${PORT}`);
-    console.log(`===========================================\n`);
+checkForUpdates().then(() => {
+    server.listen(PORT, async () => {
+        console.log(`\n===========================================`);
+        console.log(`✅ Simple Web App is running!`);
+        console.log(`Open your browser and visit: http://localhost:${PORT}`);
+        console.log(`===========================================\n`);
 
-    // Fetch initial settings from DB so frontend can populate before MT5 connects
-    try {
-        const { data, error } = await supabase.from('ea_settings_master').select('*').limit(10);
-        if (data && !error && data.length > 0) {
-            data.forEach(row => {
-                const accId = row.account_id || 'default';
-                // Store in separate preloaded map — NOT in instanceDataMap
-                preloadedSettings.set(accId, {
-                    start_lot: row.start_lot,
-                    lot_multiplier: row.lot_multiplier,
-                    max_levels: row.max_levels,
-                    tp_mode: row.tp_mode,
-                    tp_usd: row.take_profit_usd,
-                    use_dynamic_step: row.use_dynamic_step,
-                    grid_step: row.fixed_grid_step,
-                    atr_period: row.atr_period,
-                    atr_multiplier: row.atr_multiplier,
-                    use_trend_filter: row.use_trend_filter,
-                    ema_fast: row.ema_fast,
-                    ema_slow: row.ema_slow,
-                    rsi_period: row.rsi_period,
-                    rsi_tf: row.rsi_tf,
-                    rsi_buy: row.rsi_buy_level,
-                    rsi_sell: row.rsi_sell_level,
-                    use_basket_trail: row.use_basket_trail,
-                    trail_start: row.basket_trail_start_usd,
-                    trail_step: row.basket_trail_step_usd
+        // Fetch initial settings from DB so frontend can populate before MT5 connects
+        try {
+            const { data, error } = await supabase.from('ea_settings_master').select('*').limit(10);
+            if (data && !error && data.length > 0) {
+                data.forEach(row => {
+                    const accId = row.account_id || 'default';
+                    // Store in separate preloaded map — NOT in instanceDataMap
+                    preloadedSettings.set(accId, {
+                        start_lot: row.start_lot,
+                        lot_multiplier: row.lot_multiplier,
+                        max_levels: row.max_levels,
+                        tp_mode: row.tp_mode,
+                        tp_usd: row.take_profit_usd,
+                        use_dynamic_step: row.use_dynamic_step,
+                        grid_step: row.fixed_grid_step,
+                        atr_period: row.atr_period,
+                        atr_multiplier: row.atr_multiplier,
+                        use_trend_filter: row.use_trend_filter,
+                        ema_fast: row.ema_fast,
+                        ema_slow: row.ema_slow,
+                        rsi_period: row.rsi_period,
+                        rsi_tf: row.rsi_tf,
+                        rsi_buy: row.rsi_buy_level,
+                        rsi_sell: row.rsi_sell_level,
+                        use_basket_trail: row.use_basket_trail,
+                        trail_start: row.basket_trail_start_usd,
+                        trail_step: row.basket_trail_step_usd
+                    });
+                    console.log(`[Supabase] Pre-loaded settings for account: ${accId}`);
                 });
-                console.log(`[Supabase] Pre-loaded settings for account: ${accId}`);
-            });
+            }
+        } catch (e) {
+            console.error("[Supabase] Failed to pre-load settings.");
         }
-    } catch (e) {
-        console.error("[Supabase] Failed to pre-load settings.");
-    }
 
-    console.log(`Waiting for data from EA...`);
+        console.log(`Waiting for data from EA...`);
+    });
 });
+
