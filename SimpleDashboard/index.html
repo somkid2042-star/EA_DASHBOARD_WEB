@@ -1,0 +1,2503 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Smart Grid">
+    <meta name="theme-color" content="#005696">
+    <link rel="manifest" href="manifest.json">
+    <title>Smart Grid Dashboard</title>
+    <!-- Fonts and Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary-blue: #4A90E2;
+            --dark-blue: #3A78C4;
+            --bg-color: #F5F7FA;
+            --card-bg: #FFFFFF;
+            --text-main: #333333;
+            --text-muted: #8E8E93;
+            --border-color: #E5E5EA;
+            --success: #34C759;
+            --danger: #FF3B30;
+            --warning: #FF9500;
+            --nav-bg: #FFFFFF;
+            --input-bg: #F2F2F7;
+            --input-focus-bg: #FFFFFF;
+        }
+
+        .dark {
+            --primary-blue: #64D2FF;
+            --dark-blue: #409CFF;
+            --bg-color: #000000;
+            --card-bg: #1C1C1E;
+            --text-main: #F2F2F7;
+            --text-muted: #98989D;
+            --border-color: #38383A;
+            --success: #30D158;
+            --danger: #FF453A;
+            --warning: #FF9F0A;
+            --nav-bg: #1C1C1E;
+            --input-bg: #2C2C2E;
+            --input-focus-bg: #3A3A3C;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Kanit', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 450px;
+            background-color: var(--bg-color);
+            position: relative;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* --- Header --- */
+        .header {
+            background: var(--card-bg);
+            color: var(--text-main);
+            padding: 12px 16px;
+            padding-top: calc(12px + env(safe-area-inset-top));
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+        }
+
+        .app-title {
+            font-size: 19px;
+            font-weight: 500;
+        }
+
+        .status-dot {
+            height: 12px;
+            width: 12px;
+            background-color: var(--success);
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 0 3px rgba(0, 210, 122, 0.2);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(0, 210, 122, 0.4);
+            }
+
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 6px rgba(0, 210, 122, 0);
+            }
+
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(0, 210, 122, 0);
+            }
+        }
+
+        /* --- Bottom Navigation --- */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            margin: 0;
+            width: 100%;
+            max-width: 100%;
+            background-color: var(--nav-bg);
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-start;
+            padding: 0;
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+            box-shadow: 0 -1px 12px rgba(0, 0, 0, 0.05);
+            border-top: 1px solid var(--border-color);
+            z-index: 100;
+            transition: background-color 0.3s;
+        }
+
+        .bottom-nav a {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 6px 0 4px 0;
+            text-decoration: none;
+            color: var(--text-muted);
+            transition: color 0.2s;
+            position: relative;
+        }
+
+        .bottom-nav a .nav-icon {
+            width: 24px;
+            height: 24px;
+            margin-bottom: 3px;
+            stroke-width: 1.2;
+            stroke: currentColor;
+            fill: none;
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .bottom-nav a span.nav-label {
+            font-size: 10px;
+            font-weight: 400;
+        }
+
+        .bottom-nav a.active {
+            color: var(--primary-blue);
+        }
+
+        .bottom-nav a:active .nav-icon {
+            transform: scale(0.85);
+        }
+
+        /* --- Settings Form --- */
+        .settings-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .form-group label {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--input-bg);
+            font-family: 'Kanit', sans-serif;
+            font-size: 16px;
+            color: var(--text-main);
+            outline: none;
+            transition: border-color 0.2s, background-color 0.3s;
+        }
+
+        .form-input:focus {
+            border-color: var(--primary-blue);
+            background-color: var(--input-focus-bg);
+        }
+
+        .btn-save {
+            background-color: var(--primary-blue);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 14px;
+            font-family: 'Kanit', sans-serif;
+            font-size: 15px;
+            font-weight: 400;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: opacity 0.2s;
+        }
+
+        .btn-save:active {
+            opacity: 0.8;
+        }
+
+        /* --- Main Content --- */
+        .content {
+            padding: 16px;
+            padding-bottom: calc(70px + env(safe-area-inset-bottom));
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow-sm);
+            border: none;
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+
+        /* Balance Card (iOS Style) */
+        .balance-card {
+            background: var(--card-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+            text-align: center;
+            padding: 24px 20px;
+            position: relative;
+            overflow: hidden;
+            border-radius: 20px;
+        }
+
+        .balance-label {
+            font-size: 12px;
+            font-weight: 400;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .balance-value {
+            font-size: 38px;
+            font-weight: 400;
+            margin-bottom: 16px;
+            letter-spacing: -1px;
+            color: var(--text-main);
+            position: relative;
+            z-index: 1;
+        }
+
+        .equity-row {
+            display: inline-flex;
+            align-items: center;
+            background: var(--input-bg);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            border: 1px solid var(--border-color);
+            position: relative;
+            z-index: 1;
+        }
+
+        .equity-row span:first-child {
+            color: var(--text-muted);
+            margin-right: 6px;
+            font-weight: 400;
+        }
+
+        .equity-row span:last-child {
+            font-weight: 400;
+            color: var(--text-main);
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: background-color 0.3s;
+        }
+
+        .stat-card .stat-card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stat-card .stat-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .stat-card .stat-icon.blue {
+            background: rgba(0, 122, 255, 0.1);
+            color: #007aff;
+        }
+
+        .stat-card .stat-icon.green {
+            background: rgba(52, 199, 89, 0.1);
+            color: #34c759;
+        }
+
+        .stat-card .stat-icon.orange {
+            background: rgba(255, 149, 0, 0.1);
+            color: #ff9500;
+        }
+
+        .stat-card .stat-icon.purple {
+            background: rgba(175, 82, 222, 0.1);
+            color: #af52de;
+        }
+
+        .stat-card .stat-card-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .stat-card .stat-card-value {
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--text-main);
+            letter-spacing: -0.3px;
+        }
+
+        .stat-card .stat-card-value.trend-up,
+        .stat-card .stat-card-value.positive {
+            color: var(--success);
+        }
+
+        .stat-card .stat-card-value.trend-down,
+        .stat-card .stat-card-value.negative {
+            color: var(--danger);
+        }
+
+        .stat-row {
+            display: flex;
+            align-items: center;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+
+        .stat-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background-color: var(--stat-blue-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            color: var(--primary-blue);
+        }
+
+        .stat-icon span {
+            font-size: 22px;
+        }
+
+        .stat-info {
+            flex: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stat-label {
+            font-size: 15px;
+            color: var(--text-main);
+            font-weight: 400;
+        }
+
+        .stat-value {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        /* Status Colors */
+        .profit.positive {
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        .profit.negative {
+            color: var(--danger);
+            font-weight: 600;
+        }
+
+        .trend.UP {
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        .trend.DOWN {
+            color: var(--danger);
+            font-weight: 600;
+        }
+
+        .trend.SIDEWAYS {
+            color: var(--warning);
+            font-weight: 600;
+        }
+
+        .value.negative {
+            color: var(--danger);
+            font-weight: 600;
+        }
+
+        /* Calendar */
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .calendar-month-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+
+        .calendar-month-btn:hover {
+            background-color: var(--input-focus-bg);
+        }
+
+        .calendar-weekdays {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            text-align: center;
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 4px;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            /* Make it a square */
+            border-radius: 12px;
+            padding: 4px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .calendar-day.empty {
+            background-color: transparent;
+            border-color: transparent;
+            cursor: default;
+        }
+
+        .calendar-day .day-num {
+            font-size: 11px;
+            color: var(--text-muted);
+            align-self: flex-start;
+            margin-left: 2px;
+            font-weight: 500;
+        }
+
+        .calendar-day.today .day-num {
+            font-weight: 500;
+            color: var(--primary-blue);
+        }
+
+        .calendar-day .day-profit {
+            font-size: 9px;
+            font-weight: 500;
+            margin-top: auto;
+            margin-bottom: 6px;
+        }
+
+        .calendar-day.win {
+            background-color: rgba(52, 199, 89, 0.08);
+            /* iOS Green */
+            border-color: rgba(52, 199, 89, 0.2);
+        }
+
+        .calendar-day.win .day-profit {
+            color: var(--success);
+        }
+
+        .calendar-day.loss {
+            background-color: rgba(248, 81, 73, 0.08);
+            /* iOS Red */
+            border-color: rgba(248, 81, 73, 0.2);
+        }
+
+        .calendar-day.loss .day-profit {
+            color: var(--danger);
+        }
+
+        .calendar-day:active,
+        .calendar-day.selected {
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
+            /* iOS Blue focus */
+            background-color: var(--input-focus-bg);
+        }
+
+        /* Detail View */
+        #history-detail-view {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+            display: none;
+            /* hidden by default */
+        }
+
+        .detail-header {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 10px;
+            color: var(--text-main);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .detail-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+
+        .detail-empty {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 13px;
+            padding: 10px;
+        }
+
+        /* Active Orders */
+        .order-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .order-item {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: opacity 0.3s ease, transform 0.2s ease;
+            position: relative;
+        }
+
+        .order-item.order-profit-positive {
+            border-left: 4px solid var(--success);
+        }
+
+        .order-item.order-profit-negative {
+            border-left: 4px solid var(--danger);
+        }
+
+        .order-item.closing {
+            opacity: 0.5;
+            transform: scale(0.98);
+        }
+
+        .order-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .order-ticket {
+            font-size: 11px;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+        }
+
+        .order-main-details {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .order-type {
+            font-size: 11px;
+            font-weight: 500;
+            padding: 3px 8px;
+            border-radius: 6px;
+            background-color: var(--input-bg);
+            color: var(--text-main);
+            text-transform: uppercase;
+        }
+
+        .order-type.buy {
+            background-color: rgba(52, 199, 89, 0.15);
+            color: var(--success);
+        }
+
+        .order-type.sell {
+            background-color: rgba(248, 81, 73, 0.15);
+            color: var(--danger);
+        }
+
+        .order-vol {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        .order-price {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .order-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+        }
+
+        .order-profit {
+            font-size: 18px;
+            font-weight: 500;
+            text-align: right;
+            letter-spacing: -0.5px;
+        }
+
+        .order-profit.positive {
+            color: var(--success);
+        }
+
+        .order-profit.negative {
+            color: var(--danger);
+        }
+
+        .btn-close {
+            background-color: var(--input-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 6px 14px;
+            font-family: 'Kanit', sans-serif;
+            font-size: 13px;
+            font-weight: 400;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            z-index: 1;
+        }
+
+        .btn-close:hover {
+            background-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .btn-multiply {
+            background-color: var(--input-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-family: 'Kanit', sans-serif;
+            font-size: 13px;
+            font-weight: 400;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            z-index: 1;
+        }
+
+        .btn-multiply:hover {
+            background-color: var(--bg-color);
+        }
+
+        .btn-close-all {
+            background-color: var(--input-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 10px 16px;
+            font-family: 'Kanit', sans-serif;
+            font-size: 14px;
+            font-weight: 400;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex: 1;
+        }
+
+        .btn-close-all:hover {
+            background-color: var(--bg-color);
+        }
+
+        .btn-close-profit {
+            background-color: var(--input-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 10px 16px;
+            font-family: 'Kanit', sans-serif;
+            font-size: 14px;
+            font-weight: 400;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex: 1;
+        }
+
+        .btn-close-profit:hover {
+            background-color: var(--bg-color);
+        }
+
+        .orders-summary {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .orders-summary-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .orders-summary-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .empty-orders {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 14px;
+            padding: 20px 0;
+        }
+
+        /* View Switching (Tabs) */
+        .page-view {
+            display: none;
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        .page-view.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <h1 class="app-title">Dashboard</h1>
+            </div>
+            <div class="header-right">
+                <span id="account-badge" onclick="switchView('accounts', 'บัญชี'); return false;"
+                    style="background: var(--stat-blue-bg); color: var(--primary-blue); padding: 5px 10px; border-radius: 12px; font-size: 11px; font-weight: 500; cursor: pointer; margin-right: 8px; display:inline-flex; align-items:center; gap:4px;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                    -</span>
+                <span class="status-dot"></span>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="content">
+
+            <!-- ================= VIEW: HOME ================= -->
+            <div id="view-home" class="page-view active">
+                <!-- Balance Card -->
+                <div class="card balance-card">
+                    <div class="balance-label">ยอดเงินคงเหลือ (Balance)</div>
+                    <div class="balance-value" id="balance">$0.00</div>
+                    <div class="equity-row">
+                        <span>ยอดเงินอิควิตี้ (Equity):</span> <span id="equity">$0.00</span>
+                    </div>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <div class="stat-icon blue"><span class="material-symbols-rounded">currency_exchange</span>
+                            </div>
+                            <div class="stat-card-label">คู่เงิน (Symbol)</div>
+                        </div>
+                        <div class="stat-card-value" id="symbol">-</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <div class="stat-icon green"><span class="material-symbols-rounded">trending_up</span></div>
+                            <div class="stat-card-label">เทรนด์ (Trend)</div>
+                        </div>
+                        <div class="stat-card-value trend" id="trend">-</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <div class="stat-icon orange"><span class="material-symbols-rounded">warning</span></div>
+                            <div class="stat-card-label">Max Drawdown</div>
+                        </div>
+                        <div class="stat-card-value negative" id="max_dd">0.00%</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <div class="stat-icon purple"><span class="material-symbols-rounded">monitoring</span></div>
+                            <div class="stat-card-label">กำไรรวมล่าสุด</div>
+                        </div>
+                        <div class="stat-card-value profit" id="total_profit">$0.00</div>
+                    </div>
+                </div>
+
+                <!-- Today & Monthly P/L Cards -->
+                <div class="stats-grid" style="margin-bottom: 0;">
+                    <div id="card-today-pl" class="balance-card"
+                        style="padding:16px; text-align:left; margin-bottom:12px; border-radius:16px; position:relative; overflow:hidden;">
+                        <div style="font-size:12px; opacity:0.8;">กำไร/ขาดทุนวันนี้</div>
+                        <div id="today_pl_value" style="font-size:24px; font-weight:700; margin-top:4px;">$0.00</div>
+                    </div>
+                    <div id="card-month-pl" class="balance-card"
+                        style="padding:16px; text-align:left; margin-bottom:12px; border-radius:16px; position:relative; overflow:hidden;">
+                        <div style="font-size:12px; opacity:0.8;">กำไร/ขาดทุนเดือนนี้</div>
+                        <div id="month_pl_value" style="font-size:24px; font-weight:700; margin-top:4px;">$0.00</div>
+                    </div>
+                </div>
+
+                <!-- Monthly Chart Card -->
+                <div class="card" style="padding:16px; margin-bottom:12px;">
+                    <div style="font-size:14px; font-weight:600; color:var(--text-main); margin-bottom:12px;">📈
+                        กำไร/ขาดทุนรายวัน (เดือนนี้)</div>
+                    <canvas id="monthly-chart" width="400" height="180" style="width:100%; height:180px;"></canvas>
+                </div>
+            </div> <!-- End view-home -->
+
+            <!-- ================= VIEW: ORDERS ================= -->
+            <div id="view-orders" class="page-view">
+                <!-- Orders Summary Card -->
+                <div id="orders-summary-card" class="balance-card"
+                    style="padding: 20px; margin-bottom: 15px; text-align:left;">
+                    <div class="orders-summary">
+                        <div class="orders-summary-row">
+                            <div>
+                                <div style="font-size:13px; opacity:0.8;">ออเดอร์ทั้งหมด</div>
+                                <div style="font-size:28px; font-weight:700;" id="open_orders">0</div>
+                            </div>
+                            <div style="text-align:right;">
+                                <div style="font-size:13px; opacity:0.8;">กำไร/ขาดทุนรวม</div>
+                                <div style="font-size:28px; font-weight:700;" id="orders_total_profit">$0.00</div>
+                            </div>
+                        </div>
+                        <div class="orders-summary-buttons">
+                            <button class="btn-close-all" onclick="closeAllOrders()">ปิดทั้งหมด</button>
+                            <button class="btn-close-profit" onclick="closeProfitableOrders()">ปิดเฉพาะกำไร</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="order-list" id="active_orders_list">
+                    <!-- orders injected here -->
+                </div>
+
+                <!-- Closed Orders Today Section -->
+                <div class="card" style="margin-top: 12px; padding: 16px;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <div style="font-size: 14px; font-weight: 600; color: var(--text-main);">📋 ปิดแล้ววันนี้</div>
+                        <div id="closed_today_tp" style="font-size: 18px; font-weight: 700; color: var(--success);">
+                            กำไร:
+                            $0.00</div>
+                    </div>
+                    <div id="closed_orders_today_list" class="order-list" style="max-height: 300px; overflow-y: auto;">
+                        <div class="empty-orders" style="font-size: 13px;">ยังไม่มีออเดอร์ปิดวันนี้</div>
+                    </div>
+                </div>
+            </div> <!-- End view-orders -->
+
+            <!-- ================= VIEW: HISTORY ================= -->
+            <div id="view-history" class="page-view">
+                <div class="card">
+                    <!-- Month Selector -->
+                    <div class="calendar-header">
+                        <button class="calendar-month-btn" onclick="changeMonth(-1)">
+                            <span class="material-symbols-rounded">chevron_left</span>
+                        </button>
+                        <span id="calendar-month-label">March 2026</span>
+                        <button class="calendar-month-btn" onclick="changeMonth(1)">
+                            <span class="material-symbols-rounded">chevron_right</span>
+                        </button>
+                    </div>
+
+                    <!-- Days of Week -->
+                    <div class="calendar-weekdays">
+                        <div>Mon</div>
+                        <div>Tue</div>
+                        <div>Wed</div>
+                        <div>Thu</div>
+                        <div>Fri</div>
+                    </div>
+
+                    <!-- Calendar Grid -->
+                    <div class="calendar-grid" id="calendar-grid">
+                        <!-- calendar days injected here -->
+                    </div>
+
+                    <!-- Detail View (Hidden until clicked) -->
+                    <div id="history-detail-view">
+                        <div class="detail-header">
+                            <span id="detail-date-label">March 12, 2026</span>
+                            <button class="detail-close" onclick="closeDayDetails()">
+                                <span class="material-symbols-rounded" style="font-size:18px;">close</span>
+                            </button>
+                        </div>
+                        <div class="order-list" id="history-detail-list">
+                            <!-- history orders injected here -->
+                        </div>
+                    </div>
+                </div>
+            </div> <!-- End view-history -->
+
+            <!-- ================= VIEW: SETTINGS ================= -->
+            <div id="view-settings" class="page-view">
+                <!-- Instance selector badge at top -->
+                <div id="settings-instance-badge"
+                    style="text-align:center; padding:10px; margin-bottom:12px; border-radius:12px; font-size:14px; font-weight:500; color:var(--primary-blue); background:var(--stat-blue-bg); display:flex; justify-content:center; align-items:center; gap:6px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="3" y1="9" x2="21" y2="9"></line>
+                        <line x1="9" y1="21" x2="9" y2="9"></line>
+                    </svg> Grid — กำลังโหลด...
+                </div>
+
+                <div class="card">
+                    <div class="settings-form" id="settings-dynamic-form">
+                        <!-- Settings fields injected by JS based on strategy -->
+                        <div style="text-align:center; padding:20px; color:var(--text-muted);">กำลังโหลดการตั้งค่า...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notification Settings (always shown) -->
+                <div class="card" style="margin-top:12px;">
+                    <div class="settings-form">
+                        <h4
+                            style="margin:0; padding-bottom:5px; border-bottom:1px solid var(--border-color); color:var(--text-main); font-weight:600; display:flex; align-items:center; gap:4px;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                            </svg> ระบบแจ้งเตือน (Notifications)
+                        </h4>
+                        <div class="form-group"
+                            style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                            <label style="margin-bottom: 0;">Push Notifications</label>
+                            <button id="btnSubscribePush" onclick="subscribeToPush()"
+                                style="padding: 8px 12px; border-radius: 8px; border: none; background: var(--primary-blue); color: white; font-weight: 500; cursor: pointer; font-family: 'Kanit', sans-serif; display:inline-flex; align-items:center; gap:4px;"><svg
+                                    width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                                </svg>
+                                เปิดใช้งาน</button>
+                        </div>
+                        <p id="pushStatusMsg" style="font-size: 12px; color: var(--text-muted); margin-top: 5px;"></p>
+                        <button id="btnTestPush" onclick="testPushFromWeb()"
+                            style="margin-top: 8px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-main); font-weight: 500; cursor: pointer; font-family: 'Kanit', sans-serif; font-size: 13px; display:inline-flex; align-items:center; gap:4px;"><svg
+                                width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M10 2v7.31"></path>
+                                <path d="M14 9.3V1.99"></path>
+                                <path d="M8.5 2h7"></path>
+                                <path d="M14 9.3a6.5 6.5 0 1 1-4 0"></path>
+                                <path d="M5.52 16h12.96"></path>
+                            </svg>
+                            ทดสอบแจ้งเตือน</button>
+                    </div>
+                </div>
+
+                <!-- Dark/Light Mode Toggle -->
+                <div class="card" style="margin-top:12px;">
+                    <div class="settings-form">
+                        <h4
+                            style="margin:0; padding-bottom:5px; border-bottom:1px solid var(--border-color); color:var(--text-main);">
+                            🎨 ธีม (Theme)</h4>
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
+                            <div>
+                                <div style="font-size:14px; font-weight:500; color:var(--text-main);" id="theme-label">
+                                    ☀️ โหมดสว่าง</div>
+                                <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">เปลี่ยนธีมหน้าจอ
+                                </div>
+                            </div>
+                            <label
+                                style="position:relative; display:inline-block; width:56px; height:30px; margin:0; cursor:pointer;">
+                                <input type="checkbox" id="theme-toggle" onchange="toggleDarkMode()"
+                                    style="opacity:0; width:0; height:0;">
+                                <span
+                                    style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#CCC; transition:0.3s; border-radius:30px;"></span>
+                                <span id="theme-toggle-knob"
+                                    style="position:absolute; content:''; height:24px; width:24px; left:3px; bottom:3px; background-color:white; transition:0.3s; border-radius:50%; box-shadow:0 2px 4px rgba(0,0,0,0.2); z-index:1;"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div> <!-- End view-settings -->
+
+            <!-- ================= VIEW: ACCOUNTS ================= -->
+            <div id="view-accounts" class="page-view">
+                <div id="account-list" style="display: flex; flex-direction: column; gap: 12px;">
+                    <div class="card" style="padding: 20px; text-align: center; color: var(--text-muted);">
+                        กำลังโหลดบัญชี...
+                    </div>
+                </div>
+            </div> <!-- End view-accounts -->
+
+        </main>
+
+        <!-- Bottom Navigation (iOS Style) -->
+        <nav class="bottom-nav">
+            <a href="#" id="nav-home" class="active" onclick="switchView('home', 'Dashboard'); return false;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" class="nav-icon">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+                <span class="nav-label">หน้าหลัก</span>
+            </a>
+            <a href="#" id="nav-orders" onclick="switchView('orders', 'ออเดอร์'); return false;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" class="nav-icon">
+                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                </svg>
+                <span class="nav-label">ออเดอร์</span>
+            </a>
+            <a href="#" id="nav-history" onclick="switchView('history', 'ประวัติ'); return false;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" class="nav-icon">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <span class="nav-label">ประวัติ</span>
+            </a>
+            <a href="#" id="nav-accounts" onclick="switchView('accounts', 'บัญชี'); return false;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" class="nav-icon">
+                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                </svg>
+                <span class="nav-label">บัญชี</span>
+            </a>
+            <a href="#" id="nav-settings" onclick="switchView('settings', 'ตั้งค่า'); return false;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" class="nav-icon">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path
+                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                    </path>
+                </svg>
+                <span class="nav-label">ตั้งค่า</span>
+            </a>
+        </nav>
+
+    </div>
+
+    <script>
+        // View Switching Logic
+        function switchView(viewId, title) {
+            // Update Title
+            document.querySelector('.app-title').innerText = title;
+
+            // Hide all views
+            document.querySelectorAll('.page-view').forEach(el => el.classList.remove('active'));
+
+            // Show target view
+            document.getElementById('view-' + viewId).classList.add('active');
+
+            // Update Bottom Nav links
+            document.querySelectorAll('.bottom-nav a').forEach(el => el.classList.remove('active'));
+            document.getElementById('nav-' + viewId).classList.add('active');
+
+            // Auto-fetch accounts when switching to accounts view
+            if (viewId === 'accounts') fetchAccounts();
+        }
+
+        // ==========================================
+        //  Dark / Light Mode Toggle
+        // ==========================================
+        function toggleDarkMode() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+
+            // Update toggle knob position
+            const knob = document.getElementById('theme-toggle-knob');
+            const track = knob ? knob.previousElementSibling : null;
+            if (knob) knob.style.left = isDark ? '29px' : '3px';
+            if (track) track.style.backgroundColor = isDark ? '#4DA3FF' : '#CCC';
+
+            // Update label
+            const label = document.getElementById('theme-label');
+            if (label) label.innerHTML = isDark ? '🌙 โหมดมืด' : '☀️ โหมดสว่าง';
+
+            // Update meta theme-color
+            const meta = document.querySelector('meta[name="theme-color"]');
+            if (meta) meta.content = isDark ? '#0D1117' : '#005696';
+        }
+
+        // Restore user's preferred theme on load
+        (function restoreTheme() {
+            const saved = localStorage.getItem('theme');
+            if (saved === 'dark') {
+                document.documentElement.classList.add('dark');
+                // Defer UI updates until DOM is ready
+                document.addEventListener('DOMContentLoaded', () => {
+                    const toggle = document.getElementById('theme-toggle');
+                    const knob = document.getElementById('theme-toggle-knob');
+                    const track = knob ? knob.previousElementSibling : null;
+                    const label = document.getElementById('theme-label');
+                    if (toggle) toggle.checked = true;
+                    if (knob) knob.style.left = '29px';
+                    if (track) track.style.backgroundColor = '#4DA3FF';
+                    if (label) label.innerHTML = '🌙 โหมดมืด';
+                    const meta = document.querySelector('meta[name="theme-color"]');
+                    if (meta) meta.content = '#0D1117';
+                });
+            }
+        })();
+
+        // Calendar State
+        let currentCalendarDate = new Date();
+        let cachedHistoryData = [];
+
+        // Account State — restore from localStorage if available
+        let currentAccountId = localStorage.getItem('ea_last_account_id') || 'default';
+        let currentSymbol = localStorage.getItem('ea_last_symbol') || '';
+        let currentStrategy = localStorage.getItem('ea_last_strategy') || 'GRID';
+
+        async function fetchAccounts() {
+            const listEl = document.getElementById('account-list');
+            if (!listEl) return;
+            try {
+                const res = await fetch('/api/accounts');
+                if (!res.ok) throw new Error('Server: ' + res.status);
+                const instances = await res.json();
+
+                if (instances.length === 0) {
+                    listEl.innerHTML = '<div class="card" style="padding: 20px; text-align: center; color: var(--text-muted);">ยังไม่มีบัญชีเชื่อมต่อ กรุณาเปิด EA บน MT5</div>';
+                    return;
+                }
+
+                // Auto-select first instance if current isn't in the list
+                const currentFound = instances.find(a => a.account_id === currentAccountId && (a.symbol || '') === currentSymbol);
+                if (!currentFound && instances.length > 0) {
+                    currentAccountId = instances[0].account_id;
+                    currentSymbol = instances[0].symbol || '';
+                    firstLoad = true;
+                }
+
+                // ── Group instances by symbol ──
+                const symbolGroups = {};
+                instances.forEach(inst => {
+                    const sym = inst.symbol || '...';
+                    if (!symbolGroups[sym]) symbolGroups[sym] = [];
+                    symbolGroups[sym].push(inst);
+                });
+
+                let html = '';
+                Object.keys(symbolGroups).forEach(sym => {
+                    const group = symbolGroups[sym];
+                    const anySelected = group.some(inst => inst.account_id === currentAccountId && (inst.symbol || '') === currentSymbol);
+
+                    // Aggregate totals
+                    let totalProfit = 0;
+                    let totalOrders = 0;
+                    group.forEach(inst => {
+                        totalProfit += (inst.total_profit || 0);
+                        totalOrders += (inst.active_orders || []).length;
+                    });
+                    const gpColor = totalProfit >= 0 ? 'var(--success)' : 'var(--danger)';
+                    const gpPrefix = totalProfit >= 0 ? '+' : '-';
+                    const firstInst = group[0];
+
+                    // Build instance sections
+                    let sectionsHtml = '';
+                    group.forEach((inst, idx) => {
+                        const isSelected = inst.account_id === currentAccountId && (inst.symbol || '') === currentSymbol;
+                        const tp = inst.total_profit || 0;
+                        const strategy = inst.strategy || 'GRID';
+                        const trend = inst.trend_direction || '-';
+                        const trendColor = trend === 'UP' ? 'var(--success)' : trend === 'DOWN' ? 'var(--danger)' : 'var(--text-muted)';
+                        const orders = inst.active_orders || [];
+                        const stratLabel = strategy === 'BTC_MOMENTUM' ? 'Momentum' : 'Grid';
+                        const hedgeBadge = inst.is_hedged ? ' <span style="background:rgba(255,149,0,0.1);color:var(--stat-orange-color);padding:1px 5px;border-radius:4px;font-size:9px;font-weight:500;">HEDGED</span>' : '';
+
+                        // Divider between instances
+                        if (idx > 0) {
+                            sectionsHtml += '<div style="height:1px; background:var(--border-color); margin:14px 0;"></div>';
+                        }
+
+                        // Instance header
+                        sectionsHtml += `
+                        <div onclick="switchInstance('${inst.account_id}', '${sym}')" style="cursor:pointer;">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <div style="display:flex; align-items:center; gap:6px;">
+                                    ${isSelected ? '<div style="width:6px;height:6px;border-radius:50%;background:var(--primary-blue);"></div>' : ''}
+                                    <span style="font-size:13px; font-weight:600; color:var(--text-main);">${inst.account_id}</span>
+                                    <span style="font-size:11px; color:var(--text-muted);">· ${stratLabel}</span>
+                                    ${hedgeBadge}
+                                </div>
+                                <span style="font-size:14px; font-weight:600; color:${tp >= 0 ? 'var(--success)' : 'var(--danger)'};">${tp >= 0 ? '+' : '-'}$${Math.abs(tp).toFixed(2)}</span>
+                            </div>`;
+
+                        // Stats row
+                        let ddStat = '';
+                        if (strategy !== 'BTC_MOMENTUM') {
+                            ddStat = `<div style="text-align:center;">
+                                    <div style="font-size:9px; color:var(--text-muted); text-transform:uppercase;">DD</div>
+                                    <div style="font-size:13px; font-weight:600; color:var(--danger);">${(inst.max_dd || 0).toFixed(1)}%</div>
+                                </div>`;
+                        }
+                        let btcStats = '';
+                        if (strategy === 'BTC_MOMENTUM') {
+                            const bp = inst.btc_position;
+                            btcStats = `<div style="text-align:center;">
+                                    <div style="font-size:9px; color:var(--text-muted); text-transform:uppercase;">RSI</div>
+                                    <div style="font-size:13px; font-weight:600; color:var(--stat-orange-color);">${inst.btc_rsi ? inst.btc_rsi.toFixed(1) : '-'}</div>
+                                </div>
+                                <div style="text-align:center;">
+                                    <div style="font-size:9px; color:var(--text-muted); text-transform:uppercase;">ATR</div>
+                                    <div style="font-size:13px; font-weight:600; color:var(--stat-orange-color);">${inst.btc_atr ? inst.btc_atr.toFixed(2) : '-'}</div>
+                                </div>
+                                <div style="text-align:center;">
+                                    <div style="font-size:9px; color:var(--text-muted); text-transform:uppercase;">Status</div>
+                                    <div style="font-size:11px; font-weight:600; color:var(--stat-orange-color);">${bp && bp.status ? bp.status : 'WAIT'}</div>
+                                </div>`;
+                        }
+
+                        sectionsHtml += `
+                            <div style="display:flex; justify-content:space-around; margin-top:10px; padding:8px 0; background:var(--bg-main); border-radius:10px;">
+                                <div style="text-align:center;">
+                                    <div style="font-size:9px; color:var(--text-muted); text-transform:uppercase;">Balance</div>
+                                    <div style="font-size:13px; font-weight:600; color:var(--text-main);">$${(inst.balance || 0).toFixed(2)}</div>
+                                </div>
+                                <div style="text-align:center;">
+                                    <div style="font-size:9px; color:var(--text-muted); text-transform:uppercase;">Equity</div>
+                                    <div style="font-size:13px; font-weight:600; color:var(--text-main);">$${(inst.equity || 0).toFixed(2)}</div>
+                                </div>
+                                <div style="text-align:center;">
+                                    <div style="font-size:9px; color:var(--text-muted); text-transform:uppercase;">Trend</div>
+                                    <div style="font-size:13px; font-weight:600; color:${trendColor};">${trend}</div>
+                                </div>
+                                ${ddStat}
+                                ${btcStats}
+                            </div>`;
+
+                        // Orders
+                        if (orders.length > 0) {
+                            orders.forEach(o => {
+                                const isBuy = o.type === 'BUY';
+                                const tClr = isBuy ? 'var(--success)' : 'var(--danger)';
+                                const pClr = o.profit >= 0 ? 'var(--success)' : 'var(--danger)';
+                                const pPfx = o.profit >= 0 ? '+$' : '-$';
+                                sectionsHtml += `
+                            <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border-color);">
+                                <div style="display:flex; align-items:center; gap:6px;">
+                                    <span style="color:${tClr}; font-size:11px; font-weight:700;">${o.type}</span>
+                                    <span style="font-size:11px; color:var(--text-muted);">${o.volume.toFixed(2)} @ ${o.open_price.toFixed(2)}</span>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:4px;">
+                                    <span style="font-size:12px; font-weight:600; color:${pClr};">${pPfx}${Math.abs(o.profit).toFixed(2)}</span>
+                                    <button onclick="event.stopPropagation(); switchInstance('${inst.account_id}','${sym}'); multiplyOrder(${o.ticket})" style="padding:3px 8px; border:1px solid var(--border-color); background:var(--input-bg); color:var(--text-main); border-radius:6px; font-size:10px; cursor:pointer; font-family:'Kanit',sans-serif;">+ถัว</button>
+                                    <button onclick="event.stopPropagation(); switchInstance('${inst.account_id}','${sym}'); closeOrder(${o.ticket})" style="padding:3px 8px; border:1px solid var(--border-color); background:var(--input-bg); color:var(--text-main); border-radius:6px; font-size:10px; cursor:pointer; font-family:'Kanit',sans-serif;">ปิด</button>
+                                </div>
+                            </div>`;
+                            });
+                        } else {
+                            sectionsHtml += '<div style="padding:10px 0; text-align:center; font-size:11px; color:var(--text-muted);">ไม่มีออเดอร์</div>';
+                        }
+
+                        // Selected indicator
+                        if (isSelected) {
+                            sectionsHtml += '<div style="text-align:center; padding-top:6px; font-size:10px; color:var(--primary-blue); font-weight:500;">✓ กำลังดูอินสแตนซ์นี้</div>';
+                        }
+
+                        sectionsHtml += '</div>'; // close onclick div
+                    });
+
+                    // ═══════════ SINGLE FLAT CARD ═══════════
+                    html += `
+                    <div style="background:var(--card-bg); border:1px solid ${anySelected ? 'var(--primary-blue)' : 'var(--border-color)'}; border-radius:16px; padding:18px; margin-bottom:16px;">
+
+                        <!-- Symbol header -->
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                            <div style="font-size:20px; font-weight:700; color:var(--text-main); letter-spacing:-0.3px;">${sym}</div>
+                            <div style="text-align:right;">
+                                <div style="font-size:18px; font-weight:700; color:${gpColor};">${gpPrefix}$${Math.abs(totalProfit).toFixed(2)}</div>
+                                <div style="font-size:10px; color:var(--text-muted);">${totalOrders} ออเดอร์ · ${group.length} บัญชี</div>
+                            </div>
+                        </div>
+
+                        <!-- Instance sections -->
+                        ${sectionsHtml}
+
+                        <!-- Action buttons -->
+                        <div style="display:flex; gap:8px; margin-top:14px; padding-top:14px; border-top:1px solid var(--border-color);">
+                            <button onclick="event.stopPropagation(); switchInstance('${firstInst.account_id}','${sym}'); closeAllOrders()" style="flex:1; padding:9px; border:none; background:var(--stat-red-bg); color:var(--danger); border-radius:10px; font-size:12px; font-weight:600; cursor:pointer; font-family:'Kanit',sans-serif;">ปิดทั้งหมด</button>
+                            <button onclick="event.stopPropagation(); switchInstance('${firstInst.account_id}','${sym}'); closeProfitableOrders()" style="flex:1; padding:9px; border:none; background:var(--stat-green-bg); color:var(--success); border-radius:10px; font-size:12px; font-weight:600; cursor:pointer; font-family:'Kanit',sans-serif;">ปิดเฉพาะกำไร</button>
+                        </div>
+                    </div>`;
+                });
+                listEl.innerHTML = html;
+            } catch (e) {
+                console.error('Error fetching accounts:', e);
+                listEl.innerHTML = '<div class="card" style="padding: 20px; text-align: center; color: var(--danger);">Error: ' + e.message + '</div>';
+            }
+        }
+
+        function switchInstance(accountId, symbol) {
+            currentAccountId = accountId;
+            currentSymbol = symbol || '';
+            firstLoad = true;
+            // Save to localStorage for next visit
+            localStorage.setItem('ea_last_account_id', currentAccountId);
+            localStorage.setItem('ea_last_symbol', currentSymbol);
+            // Update header badge immediately
+            const badge = document.getElementById('account-badge');
+            const badgeIcon = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>';
+            const label = symbol ? `${badgeIcon} ${accountId} · ${symbol} ` : `${badgeIcon} ${accountId === 'default' ? 'Default' : accountId} `;
+            if (badge) badge.innerHTML = label;
+            fetchAccounts();
+            fetchData();
+            // Switch back to home to see data for selected instance
+            switchView('home', 'Dashboard');
+        }
+
+        // Keep backwards compat
+        function switchAccount(accountId) { switchInstance(accountId, ''); }
+
+        // Fetch Data Logic
+        let firstLoad = true;
+        async function fetchData() {
+            try {
+                const res = await fetch('/api/ea-stats?account_id=' + encodeURIComponent(currentAccountId) + '&symbol=' + encodeURIComponent(currentSymbol));
+                const data = await res.json();
+
+                // Populate settings on first load or strategy change
+                // Auto-detect strategy by symbol name (override EA-reported strategy)
+                const sym = (data.symbol || currentSymbol || '').toUpperCase();
+                let newStrategy = data.strategy || 'GRID';
+                if (sym.includes('XAU')) newStrategy = 'XAU_TREND';
+                else if (sym.includes('BTC')) newStrategy = 'BTC_MOMENTUM';
+
+                if (firstLoad || newStrategy !== currentStrategy) {
+                    currentStrategy = newStrategy;
+                    localStorage.setItem('ea_last_strategy', currentStrategy);
+                    renderSettingsForm(newStrategy, data.ea_settings || {});
+                    firstLoad = false;
+                }
+
+                document.getElementById('symbol').innerText = data.symbol || '-';
+                document.getElementById('balance').innerText = '$' + (data.balance || 0).toFixed(2);
+                document.getElementById('equity').innerText = '$' + (data.equity || 0).toFixed(2);
+                document.getElementById('open_orders').innerText = data.open_orders || 0;
+
+                const trendEl = document.getElementById('trend');
+                trendEl.innerText = data.trend_direction || '-';
+                trendEl.className = 'stat-value trend ' + (data.trend_direction || '');
+
+                document.getElementById('max_dd').innerText = (data.max_dd || 0).toFixed(2) + '%';
+
+                const profitEl = document.getElementById('total_profit');
+                const profit = data.total_profit || 0;
+                profitEl.innerText = (profit >= 0 ? '+$' : '-$') + Math.abs(profit).toFixed(2);
+                profitEl.className = 'stat-value profit ' + (profit >= 0 ? 'positive' : 'negative');
+
+                // Update History Data
+                if (data.history) {
+                    cachedHistoryData = data.history;
+                    // Auto refresh the calendar only if nothing is currently selected to prevent UI jumping
+                    if (document.getElementById('history-detail-view').style.display !== 'block') {
+                        renderCalendar();
+                    }
+                    // Update Dashboard P/L cards and chart
+                    updateDashboardPL();
+                }
+
+                // Update Active Orders
+                const ordersEl = document.getElementById('active_orders_list');
+                const ordersTotalProfitEl = document.getElementById('orders_total_profit');
+
+                if (data.active_orders && data.active_orders.length > 0) {
+                    // Calculate total profit of all orders
+                    let totalOrderProfit = 0;
+                    data.active_orders.forEach(o => totalOrderProfit += o.profit);
+                    if (ordersTotalProfitEl) {
+                        let prefix = totalOrderProfit >= 0 ? '+$' : '-$';
+                        ordersTotalProfitEl.innerText = prefix + Math.abs(totalOrderProfit).toFixed(2);
+                        ordersTotalProfitEl.style.color = totalOrderProfit > 0 ? 'var(--success)' : totalOrderProfit < 0 ? 'var(--danger)' : 'var(--text-main)';
+                    }
+
+                    // Change summary card left-border based on total profit
+                    const summaryCard = document.getElementById('orders-summary-card');
+                    if (summaryCard) {
+                        summaryCard.style.background = 'var(--card-bg)';
+                        summaryCard.style.boxShadow = 'none';
+                        if (totalOrderProfit > 0) {
+                            summaryCard.style.borderLeft = '4px solid var(--success)';
+                        } else if (totalOrderProfit < 0) {
+                            summaryCard.style.borderLeft = '4px solid var(--danger)';
+                        } else {
+                            summaryCard.style.borderLeft = '4px solid var(--text-muted)';
+                        }
+                    }
+
+                    let html = '';
+                    data.active_orders.forEach(order => {
+                        let isBuy = order.type === 'BUY';
+                        let typeClass = isBuy ? 'buy' : 'sell';
+                        let profitClass = order.profit >= 0 ? 'positive' : 'negative';
+                        let gradientClass = order.profit >= 0 ? 'order-profit-positive' : 'order-profit-negative';
+                        let prefix = order.profit >= 0 ? '+$' : '-$';
+
+                        html += `                            <div class="order-item ${gradientClass}" id="order-${order.ticket}">
+                            <div class="order-info">
+                                <div class="order-main-details">
+                                    <span class="order-type ${typeClass}">${order.type}</span>
+                                    <span class="order-vol">${order.volume.toFixed(2)}</span>
+                                </div>
+                                <div class="order-ticket">#${order.ticket} | ${order.open_price.toFixed(2)}</div>
+                            </div>
+                            <div class="order-right">
+                                <div class="order-profit ${profitClass}">${prefix}${Math.abs(order.profit).toFixed(2)}</div>
+                                <div style="display: flex; gap: 8px;">
+                                    <button class="btn-multiply" onclick="multiplyOrder(${order.ticket})">+ ถัว</button>
+                                    <button class="btn-close" onclick="closeOrder(${order.ticket})">ปิด</button>
+                                </div>
+                            </div>
+                        </div > `;
+                    });
+
+                    // Only update DOM if HTML changed to prevent flickering and losing button click animations
+                    if (ordersEl.innerHTML !== html && !document.querySelector('.closing') && !document.querySelector('.multiplying')) {
+                        ordersEl.innerHTML = html;
+                    }
+                } else {
+                    if (ordersTotalProfitEl) {
+                        ordersTotalProfitEl.innerText = '$0.00';
+                        ordersTotalProfitEl.style.color = 'var(--text-main)';
+                    }
+                    const summaryCard = document.getElementById('orders-summary-card');
+                    if (summaryCard) {
+                        summaryCard.style.background = 'var(--card-bg)';
+                        summaryCard.style.boxShadow = 'none';
+                        summaryCard.style.borderLeft = '4px solid var(--text-muted)';
+                    }
+                    if (ordersEl.innerHTML !== '<div class="empty-orders">ไม่มีออเดอร์เปิดอยู่</div>') {
+                        ordersEl.innerHTML = '<div class="empty-orders">ไม่มีออเดอร์เปิดอยู่</div>';
+                    }
+                }
+
+                // ===== Render Closed Orders Today =====
+                const closedListEl = document.getElementById('closed_orders_today_list');
+                const closedTpEl = document.getElementById('closed_today_tp');
+                if (closedListEl && cachedHistoryData && cachedHistoryData.length > 0) {
+                    const today = new Date();
+                    const todayStr = today.getFullYear() + '-' +
+                        String(today.getMonth() + 1).padStart(2, '0') + '-' +
+                        String(today.getDate()).padStart(2, '0');
+
+                    const todayOrders = cachedHistoryData.filter(t => {
+                        if (!t.date) return false;
+                        return t.date.startsWith(todayStr);
+                    });
+
+                    if (todayOrders.length > 0) {
+                        let totalTP = todayOrders.reduce((sum, t) => sum + (t.profit || 0), 0);
+
+                        if (closedTpEl) {
+                            const tpColor = totalTP >= 0 ? 'var(--success)' : 'var(--danger)';
+                            const tpPrefix = totalTP >= 0 ? '+$' : '-$';
+                            closedTpEl.style.color = tpColor;
+                            closedTpEl.innerText = `กำไร: ${tpPrefix}${Math.abs(totalTP).toFixed(2)}`;
+                        }
+
+                        let closedHtml = '';
+                        todayOrders.forEach(order => {
+                            let isBuy = (order.type || '').toUpperCase() === 'BUY';
+                            let oBgColor = isBuy ? 'var(--stat-green-bg)' : 'var(--stat-red-bg)';
+                            let oColor = isBuy ? 'var(--success)' : 'var(--danger)';
+                            let profitClass = (order.profit || 0) >= 0 ? 'positive' : 'negative';
+                            let borderClass = (order.profit || 0) >= 0 ? 'border-left: 4px solid var(--success);' : 'border-left: 4px solid var(--danger);';
+                            let prefix = (order.profit || 0) >= 0 ? '+$' : '-$';
+                            let timeStr = order.date ? order.date.split(' ')[1] || '' : '';
+
+                            closedHtml += `
+                            <div class="order-item" style="${borderClass} opacity: 0.85;">
+                                <div class="order-info">
+                                    <div class="order-main-details">
+                                        <span class="order-type" style="background:${oBgColor}; color:${oColor}; font-weight:500;">${(order.type || '').toUpperCase()}</span>
+                                        <span class="order-vol" style="font-weight:400;">${(order.volume || 0).toFixed(2)}</span>
+                                    </div>
+                                    <div class="order-ticket">#${order.ticket || '?'} | ${timeStr}</div>
+                                </div>
+                                <div class="order-right">
+                                    <div class="order-profit ${profitClass}" style="font-weight:500;">${prefix}${Math.abs(order.profit || 0).toFixed(2)}</div>
+                                </div>
+                            </div>`;
+                        });
+                        closedListEl.innerHTML = closedHtml;
+                    } else {
+                        if (closedTpEl) { closedTpEl.innerText = 'กำไร: $0.00'; closedTpEl.style.color = 'var(--text-muted)'; }
+                        closedListEl.innerHTML = '<div class="empty-orders" style="font-size: 13px;">ยังไม่มีออเดอร์ปิดวันนี้</div>';
+                    }
+                }
+
+            } catch (err) {
+                console.error('Error fetching data:', err);
+            }
+        }
+
+        // ==========================================
+        //  Calendar & History Logic
+        // ==========================================
+        function changeMonth(offset) {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + offset);
+            closeDayDetails(); // hide detail view when switching months
+            renderCalendar();
+        }
+
+        function renderCalendar() {
+            const gridEl = document.getElementById('calendar-grid');
+            if (!gridEl) return;
+
+            const year = currentCalendarDate.getFullYear();
+            const month = currentCalendarDate.getMonth(); // 0-based
+
+            // Format Title
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            document.getElementById('calendar-month-label').innerText = `${monthNames[month]} ${year} `;
+
+            // Aggregate data by day for this month
+            // data format: {"ticket":123,"symbol":"XAUUSD","type":"BUY","volume":0.01,"profit":-5.4,"date":"2026-03-05 10:20:00"}
+            const dailyData = {};
+            cachedHistoryData.forEach(trade => {
+                if (!trade.date) return;
+                // split by space to get just YYYY-MM-DD
+                const dateOnly = trade.date.split(' ')[0];
+                const parts = dateOnly.split('-');
+                if (parts.length === 3) {
+                    const tYear = parseInt(parts[0], 10);
+                    const tMonth = parseInt(parts[1], 10) - 1; // 0-based
+                    if (tYear === year && tMonth === month) {
+                        const tDay = parseInt(parts[2], 10);
+                        if (!dailyData[tDay]) dailyData[tDay] = { profit: 0, trades: [] };
+                        dailyData[tDay].profit += trade.profit;
+                        dailyData[tDay].trades.push(trade);
+                    }
+                }
+            });
+
+            // Logic for building the grid
+            const firstDayOfMonth = new Date(year, month, 1).getDay(); // 0(Sun) - 6(Sat)
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            let html = '';
+
+            // Empty cells before the first day of the month (excluding weekends)
+            // firstDayOfMonth is 0 (Sun) - 6 (Sat)
+            // For a Monday-start calendar: Mon=0, Tue=1, Wed=2, Thu=3, Fri=4
+            let startOffset = 0;
+            if (firstDayOfMonth === 0) startOffset = 0; // Sun starts on Mon (next day) but technically falls out, wait to logic
+            else if (firstDayOfMonth === 6) startOffset = 0; // Sat also falls out
+            else startOffset = firstDayOfMonth - 1; // Mon=0, Tue=1, ...
+
+            for (let i = 0; i < startOffset; i++) {
+                // Only if the month actually starts on a weekday
+                if (firstDayOfMonth > 0 && firstDayOfMonth < 6) {
+                    html += `<div class="calendar-day empty"></div>`;
+                }
+            }
+
+            // Days of the month
+            const today = new Date();
+            for (let i = 1; i <= daysInMonth; i++) {
+                const dateObj = new Date(year, month, i);
+                const dayOfWeek = dateObj.getDay();
+
+                // Skip Saturday (6) and Sunday (0)
+                if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+
+                const isToday = (year === today.getFullYear() && month === today.getMonth() && i === today.getDate());
+                let dayClass = 'calendar-day';
+                if (isToday) dayClass += ' today';
+
+                // Add leading zero for exact date matching
+                const dayStr = i < 10 ? '0' + i : i;
+                const mStr = (month + 1) < 10 ? '0' + (month + 1) : (month + 1);
+                const fullDateStr = `${year}-${mStr}-${dayStr}`;
+
+                let profitHtml = '';
+                if (dailyData[i]) {
+                    const prof = dailyData[i].profit;
+                    if (prof > 0) {
+                        dayClass += ' win';
+                        profitHtml = `<div class="day-profit">+$${Math.abs(prof).toFixed(2)}</div>`;
+                    } else if (prof < 0) {
+                        dayClass += ' loss';
+                        profitHtml = `<div class="day-profit">-$${Math.abs(prof).toFixed(2)}</div>`;
+                    } else {
+                        // exactly zero
+                        profitHtml = `<div class="day-profit" style="color:var(--text-muted)">$0.00</div>`;
+                    }
+                }
+
+                html += `
+                            <div class="${dayClass}" id="cal-cell-${fullDateStr}" onclick="showDayDetails(${i}, '${fullDateStr}')">
+                                <div class="day-num">${i}</div>
+                        ${profitHtml}
+                    </div>
+                            `;
+            }
+
+            // Empty cells after the last day (optional padding to 35 or 42 cells)
+            gridEl.innerHTML = html;
+        }
+
+        function showDayDetails(dayNumber, fullDateStr) {
+            // Unselect all
+            document.querySelectorAll('.calendar-day').forEach(el => el.classList.remove('selected'));
+            // Select current
+            const clickedCell = document.getElementById(`cal-cell-${fullDateStr}`);
+            if (clickedCell) clickedCell.classList.add('selected');
+
+            // Find all trades for this date
+            const trades = cachedHistoryData.filter(t => t.date && t.date.startsWith(fullDateStr));
+
+            const detailView = document.getElementById('history-detail-view');
+            const detailList = document.getElementById('history-detail-list');
+            const dateLabel = document.getElementById('detail-date-label');
+
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const year = parseInt(fullDateStr.split('-')[0], 10);
+            const month = parseInt(fullDateStr.split('-')[1], 10) - 1;
+            dateLabel.innerText = `${monthNames[month]} ${dayNumber}, ${year} `;
+
+            if (trades.length === 0) {
+                detailList.innerHTML = `<div class="detail-empty">ไม่มีรายการเทรดในวันนี้</div>`;
+            } else {
+                let html = '';
+                // Sort by time (descending)
+                trades.sort((a, b) => new Date(b.date) - new Date(a.date));
+                trades.forEach(order => {
+                    let isBuy = order.type.includes('BUY');
+                    let typeClass = isBuy ? 'buy' : 'sell';
+                    let profitClass = order.profit >= 0 ? 'positive' : 'negative';
+                    let gradientClass = order.profit >= 0 ? 'order-profit-positive' : 'order-profit-negative';
+                    let prefix = order.profit >= 0 ? '+$' : '-$';
+                    // extract just HH:MM
+                    let timeStr = order.date.split(' ')[1] ? order.date.split(' ')[1].substring(0, 5) : '';
+
+                    html += `                            <div class="order-item ${gradientClass}">
+                        <div class="order-info">
+                            <div class="order-main-details">
+                                <span class="order-type ${typeClass}">${order.type}</span>
+                                <span class="order-vol">${order.symbol || '-'}</span>
+                                <span class="order-price" style="font-size:11px;">${timeStr}</span>
+                            </div>
+                            <div class="order-ticket">#${order.ticket}</div>
+                        </div>
+                        <div class="order-right">
+                            <div class="order-profit ${profitClass}">${prefix}${Math.abs(order.profit).toFixed(2)}</div>
+                        </div>
+                    </div > `;
+                });
+                detailList.innerHTML = html;
+            }
+
+            detailView.style.display = 'block';
+            detailView.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }
+
+        function closeDayDetails() {
+            document.querySelectorAll('.calendar-day').forEach(el => el.classList.remove('selected'));
+            document.getElementById('history-detail-view').style.display = 'none';
+        }
+
+        // Close Order Function
+        async function closeOrder(ticket) {
+            // Optimistic UI Update
+            const orderEl = document.getElementById('order-' + ticket);
+            if (orderEl) {
+                orderEl.classList.add('closing');
+                orderEl.querySelector('.btn-close').innerText = 'กำลังปิด...';
+            }
+
+            try {
+                await fetch('/api/close-order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ticket: ticket, account_id: currentAccountId, symbol: currentSymbol })
+                });
+            } catch (err) {
+                console.error('Error closing order:', err);
+                if (orderEl) orderEl.classList.remove('closing');
+            }
+        }
+
+        // Close All Orders Function
+        async function closeAllOrders() {
+            if (!confirm('ยืนยันปิดออเดอร์ทั้งหมด?')) return;
+            try {
+                await fetch('/api/close-order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'close_all', account_id: currentAccountId, symbol: currentSymbol })
+                });
+            } catch (err) {
+                console.error('Error closing all orders:', err);
+            }
+        }
+
+        // Close Profitable Orders Only
+        async function closeProfitableOrders() {
+            if (!confirm('ยืนยันปิดเฉพาะออเดอร์ที่ได้กำไร?')) return;
+            try {
+                await fetch('/api/close-order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'close_profitable', account_id: currentAccountId, symbol: currentSymbol })
+                });
+            } catch (err) {
+                console.error('Error closing profitable orders:', err);
+            }
+        }
+
+        async function hedgeNow() {
+            if (!confirm('ยืนยัน Hedge ทันที? ระบบจะเปิดออเดอร์ตรงข้ามเพื่อล็อคขาดทุน')) return;
+            try {
+                await fetch('/api/close-order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'hedge_now', account_id: currentAccountId, symbol: currentSymbol })
+                });
+            } catch (err) {
+                console.error('Error hedging:', err);
+            }
+        }
+
+        async function closeHedge() {
+            if (!confirm('ยืนยันปลด Hedge? ระบบจะกลับไปทำงานปกติ')) return;
+            try {
+                await fetch('/api/close-order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'close_hedge', account_id: currentAccountId, symbol: currentSymbol })
+                });
+            } catch (err) {
+                console.error('Error closing hedge:', err);
+            }
+        }
+
+        // Multiply Order Function
+        async function multiplyOrder(ticket) {
+            // Optimistic UI Update
+            const orderEl = document.getElementById('order-' + ticket);
+            if (orderEl) {
+                orderEl.classList.add('multiplying');
+                orderEl.querySelector('.btn-multiply').innerText = 'กำลังเปิด...';
+            }
+
+            try {
+                await fetch('/api/open-multiplier', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ticket: ticket, account_id: currentAccountId, symbol: currentSymbol })
+                });
+
+                // Remove the multiplying visual state after 2 seconds to act as a debounce/feedback
+                setTimeout(() => {
+                    if (orderEl) {
+                        orderEl.classList.remove('multiplying');
+                        const btn = orderEl.querySelector('.btn-multiply');
+                        if (btn) btn.innerText = '+ ถัวเพิ่ม';
+                    }
+                }, 2000);
+            } catch (err) {
+                console.error('Error multiplying order:', err);
+                if (orderEl) {
+                    orderEl.classList.remove('multiplying');
+                    orderEl.querySelector('.btn-multiply').innerText = '+ ถัวเพิ่ม';
+                }
+            }
+        }
+
+        // ==========================================
+        //  Dynamic Settings Form Renderer
+        // ==========================================
+        function renderSettingsForm(strategy, settings) {
+            const formEl = document.getElementById('settings-dynamic-form');
+            const badgeEl = document.getElementById('settings-instance-badge');
+            if (!formEl) return;
+
+            const s = settings || {};
+            let html = '';
+
+            if (strategy === 'BTC_MOMENTUM') {
+                if (badgeEl) {
+                    badgeEl.style.background = 'var(--stat-orange-bg)';
+                    badgeEl.style.color = 'var(--stat-orange-color)';
+                    badgeEl.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> BTC Momentum — ${currentSymbol || 'BTC'} `;
+                }
+                html = `
+                <h4 style="margin:0; padding-bottom:5px; border-bottom:1px solid var(--border-color); color:var(--text-main); font-weight:600;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg> Lot & Risk Management</h4>
+                <div class="form-group"><label>Lot Size</label><input type="number" step="0.01" id="set_btc_lot_size" class="form-input" value="${s.lot_size || 0.01}"></div>
+                <div class="form-group"><label>Risk:Reward Ratio</label><input type="number" step="0.1" id="set_btc_risk_reward" class="form-input" value="${s.risk_reward || 2.0}"></div>
+                <div class="form-group"><label>ATR x SL Multiplier</label><input type="number" step="0.1" id="set_btc_atr_sl_mult" class="form-input" value="${s.atr_sl_mult || 1.5}"></div>
+
+                <h4 style="margin:20px 0 0 0; padding-bottom:5px; border-bottom:1px solid var(--border-color); color:var(--text-main); font-weight:600;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg> Trend Filter (EMA)</h4>
+                <div class="form-group"><label>EMA Fast Period</label><input type="number" step="1" id="set_btc_ema_fast" class="form-input" value="${s.ema_fast || 50}"></div>
+                <div class="form-group"><label>EMA Slow Period</label><input type="number" step="1" id="set_btc_ema_slow" class="form-input" value="${s.ema_slow || 200}"></div>
+                <div class="form-group"><label>Trend Timeframe</label>
+                    <select id="set_btc_trend_tf" class="form-input">
+                        <option value="60" ${s.trend_tf == 60 ? 'selected' : ''}>H1</option>
+                        <option value="240" ${s.trend_tf == 240 ? 'selected' : ''}>H4</option>
+                        <option value="1440" ${s.trend_tf == 1440 ? 'selected' : ''}>D1</option>
+                        <option value="10080" ${s.trend_tf == 10080 ? 'selected' : ''}>W1</option>
+                    </select></div>
+                <h4 style="margin:20px 0 0 0; padding-bottom:5px; border-bottom:1px solid var(--border-color); color:var(--text-main); font-weight:600;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg> Entry (RSI Pullback)</h4>
+                <div class="form-group"><label>RSI Period</label><input type="number" step="1" id="set_btc_rsi_period" class="form-input" value="${s.rsi_period || 14}"></div>
+                <div class="form-group"><label>RSI Timeframe</label>
+                    <select id="set_btc_rsi_tf" class="form-input">
+                        <option value="15" ${s.rsi_tf == 15 ? 'selected' : ''}>M15</option>
+                        <option value="30" ${s.rsi_tf == 30 ? 'selected' : ''}>M30</option>
+                        <option value="60" ${s.rsi_tf == 60 ? 'selected' : ''}>H1</option>
+                        <option value="240" ${s.rsi_tf == 240 ? 'selected' : ''}>H4</option>
+                    </select></div>
+                <div class="form-group"><label>RSI Buy Level (Pullback ซื้อ)</label><input type="number" step="1" id="set_btc_rsi_buy" class="form-input" value="${s.rsi_buy || 35}"></div>
+                <div class="form-group"><label>RSI Sell Level (Pullback ขาย)</label><input type="number" step="1" id="set_btc_rsi_sell" class="form-input" value="${s.rsi_sell || 65}"></div>
+
+                <h4 style="margin:20px 0 0 0; padding-bottom:5px; border-bottom:1px solid var(--border-color); color:var(--text-main); font-weight:600;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><polyline points="1 4 1 10 7 10"></polyline><polyline points="23 20 23 14 17 14"></polyline><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path></svg> Trailing & Partial TP</h4>
+                <div class="form-group"><label>ATR x Trail Step</label><input type="number" step="0.1" id="set_btc_trail_atr_mult" class="form-input" value="${s.trail_atr_mult || 1.0}"></div>
+                <div class="form-group"><label>Partial TP (ปิด 50% ที่ TP)</label>
+                    <select id="set_btc_partial_tp" class="form-input">
+                        <option value="true" ${s.partial_tp !== false ? 'selected' : ''}>เปิดใช้งาน</option>
+                        <option value="false" ${s.partial_tp === false ? 'selected' : ''}>ปิด</option>
+                    </select></div>
+
+                <button class="btn-save" id="btnSaveSettings" onclick="saveSettings()" style="margin-top:15px; background:var(--input-bg); border:1px solid var(--border-color); color:var(--text-main); border-radius:12px; font-weight:500;">บันทึกการตั้งค่า BTC</button>`;
+            } else if (strategy === 'XAU_TREND') {
+                if (badgeEl) {
+                    badgeEl.style.background = 'rgba(255,215,0,0.1)';
+                    badgeEl.style.color = '#FFD700';
+                    badgeEl.innerHTML = `<span class="material-symbols-rounded" style="font-size:16px;">trending_up</span> XAU Smart Trend — ${currentSymbol || 'XAU'}`;
+                }
+                html = `
+                <h4 style="margin:0; padding-bottom:5px; border-bottom:1px solid var(--border-color); color:var(--text-main); font-weight:600;"><span class="material-symbols-rounded" style="font-size:16px; vertical-align:middle; margin-right:4px;">attach_money</span> Lot & Risk Management</h4>
+                <div class="form-group"><label>Lot Size</label><input type="number" step="0.01" id="set_xau_lot_size" class="form-input" value="${s.lot_size || 0.01}"></div>
+                <div class="form-group"><label>Risk:Reward Ratio</label><input type="number" step="0.1" id="set_xau_risk_reward" class="form-input" value="${s.risk_reward || 2.0}"></div>
+                <div class="form-group"><label>ATR x SL Multiplier</label><input type="number" step="0.1" id="set_xau_atr_sl_mult" class="form-input" value="${s.atr_sl_mult || 2.0}"></div>
+
+                <h4 style="margin:20px 0 0 0; padding-bottom:5px; border-bottom:1px solid var(--border-color); color:var(--text-main); font-weight:600;"><span class="material-symbols-rounded" style="font-size:16px; vertical-align:middle; margin-right:4px;">trending_up</span> Trend Filter (EMA + ADX)</h4>
+                <div class="form-group"><label>EMA Fast Period</label><input type="number" step="1" id="set_xau_ema_fast" class="form-input" value="${s.ema_fast || 21}"></div>
+                <div class="form-group"><label>EMA Slow Period</label><input type="number" step="1" id="set_xau_ema_slow" class="form-input" value="${s.ema_slow || 55}"></div>
+                <div class="form-group"><label>Trend Timeframe</label>
+                    <select id="set_xau_trend_tf" class="form-input">
+                        <option value="60" ${s.trend_tf == 60 ? 'selected' : ''}>H1</option>
+                        <option value="240" ${s.trend_tf == 240 ? 'selected' : ''}>H4</option>
+                        <option value="1440" ${s.trend_tf == 1440 ? 'selected' : ''}>D1</option>
+                    </select></div>
+                <div class="form-group"><label>ADX Period</label><input type="number" step="1" id="set_xau_adx_period" class="form-input" value="${s.adx_period || 14}"></div>
+                <div class="form-group"><label>ADX Min (ต่ำสุดถึงจะเทรด)</label><input type="number" step="1" id="set_xau_adx_min" class="form-input" value="${s.adx_min || 20}"></div>
+
+                <h4 style="margin:20px 0 0 0; padding-bottom:5px; border-bottom:1px solid var(--border-color); color:var(--text-main); font-weight:600;"><span class="material-symbols-rounded" style="font-size:16px; vertical-align:middle; margin-right:4px;">speed</span> Entry (RSI Pullback)</h4>
+                <div class="form-group"><label>RSI Period</label><input type="number" step="1" id="set_xau_rsi_period" class="form-input" value="${s.rsi_period || 14}"></div>
+                <div class="form-group"><label>RSI Timeframe</label>
+                    <select id="set_xau_rsi_tf" class="form-input">
+                        <option value="15" ${s.rsi_tf == 15 ? 'selected' : ''}>M15</option>
+                        <option value="30" ${s.rsi_tf == 30 ? 'selected' : ''}>M30</option>
+                        <option value="60" ${s.rsi_tf == 60 ? 'selected' : ''}>H1</option>
+                        <option value="240" ${s.rsi_tf == 240 ? 'selected' : ''}>H4</option>
+                    </select></div>
+                <div class="form-group"><label>RSI Buy Level (ย่อตัว ซื้อ)</label><input type="number" step="1" id="set_xau_rsi_buy" class="form-input" value="${s.rsi_buy || 40}"></div>
+                <div class="form-group"><label>RSI Sell Level (ดีดกลับ ขาย)</label><input type="number" step="1" id="set_xau_rsi_sell" class="form-input" value="${s.rsi_sell || 60}"></div>
+
+                <h4 style="margin:20px 0 0 0; padding-bottom:5px; border-bottom:1px solid var(--border-color); color:var(--text-main); font-weight:600;"><span class="material-symbols-rounded" style="font-size:16px; vertical-align:middle; margin-right:4px;">schedule</span> Session Filter</h4>
+                <div class="form-group"><label>Session Start (GMT Hour)</label><input type="number" step="1" min="0" max="23" id="set_xau_session_start" class="form-input" value="${s.session_start || 8}"></div>
+                <div class="form-group"><label>Session End (GMT Hour)</label><input type="number" step="1" min="0" max="23" id="set_xau_session_end" class="form-input" value="${s.session_end || 22}"></div>
+
+                <h4 style="margin:20px 0 0 0; padding-bottom:5px; border-bottom:1px solid var(--border-color); color:var(--text-main); font-weight:600;"><span class="material-symbols-rounded" style="font-size:16px; vertical-align:middle; margin-right:4px;">swap_vert</span> Trailing & Partial TP</h4>
+                <div class="form-group"><label>ATR x Trail Step</label><input type="number" step="0.1" id="set_xau_trail_atr_mult" class="form-input" value="${s.trail_atr_mult || 1.5}"></div>
+                <div class="form-group"><label>Partial TP (ปิด 50% ที่ 1:1 RR)</label>
+                    <select id="set_xau_partial_tp" class="form-input">
+                        <option value="true" ${s.partial_tp !== false ? 'selected' : ''}>เปิดใช้งาน</option>
+                        <option value="false" ${s.partial_tp === false ? 'selected' : ''}>ปิด</option>
+                    </select></div>
+
+                <button class="btn-save" id="btnSaveSettings" onclick="saveSettings()" style="margin-top:15px; background:var(--input-bg); border:1px solid var(--border-color); color:var(--text-main); border-radius:12px; font-weight:500;">บันทึกการตั้งค่า XAU</button>`;
+            } else {
+                if (badgeEl) {
+                    badgeEl.style.background = 'var(--stat-blue-bg)';
+                    badgeEl.style.color = 'var(--primary-blue)';
+                    badgeEl.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg> Grid — ${currentSymbol || 'Symbol'} `;
+                }
+                html = `
+                <h4 style="margin:0; padding-bottom:5px; border-bottom:1px solid var(--border-color); color:var(--text-main); font-weight:600;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg> การจัดการเงิน (Money Management)</h4>
+                <div class="form-group"><label>Lot เริ่มต้น (Start Lot)</label><input type="number" step="0.01" id="set_start_lot" class="form-input" value="${s.start_lot || ''}"></div>
+                <div class="form-group"><label>ตัวคูณ Lot (Multiplier)</label><input type="number" step="0.1" id="set_lot_multiplier" class="form-input" value="${s.lot_multiplier || ''}"></div>
+                <div class="form-group"><label>จำนวนไม้สูงสุด (Max Levels)</label><input type="number" step="1" id="set_max_levels" class="form-input" value="${s.max_levels || ''}"></div>
+                <h4 style="margin:20px 0 0 0; padding-bottom:5px; border-bottom:1px solid var(--border-color); color:var(--text-main); font-weight:600;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg> เป้าหมายกำไร (Take Profit)</h4>
+                <div class="form-group"><label>TP Mode</label>
+                    <select id="set_tp_mode" class="form-input">
+                        <option value="0" ${s.tp_mode == 0 ? 'selected' : ''}>TP_MODE_BASKET (รวบยอด)</option>
+                        <option value="1" ${s.tp_mode == 1 ? 'selected' : ''}>TP_MODE_SINGLE (เดี่ยว)</option>
+                    </select></div>
+                <div class="form-group"><label>Take Profit ($)</label><input type="number" step="1" id="set_tp_usd" class="form-input" value="${s.tp_usd || ''}"></div>
+
+                <h4 style="margin:20px 0 0 0; padding-bottom:5px; border-bottom:2px solid var(--primary-blue); color:var(--primary-blue);">📐 การกริด (Grid Settings)</h4>
+                <div class="form-group"><label>Use Dynamic Step (ATR)</label>
+                    <select id="set_use_dynamic_step" class="form-input">
+                        <option value="true" ${s.use_dynamic_step ? 'selected' : ''}>เปิดใช้งาน</option>
+                        <option value="false" ${!s.use_dynamic_step ? 'selected' : ''}>ปิด</option>
+                    </select></div>
+                <div class="form-group"><label>ระยะกริดคงที่ (Fixed Step)</label><input type="number" step="10" id="set_grid_step" class="form-input" value="${s.grid_step || ''}"></div>
+                <div class="form-group"><label>ATR Period</label><input type="number" step="1" id="set_atr_period" class="form-input" value="${s.atr_period || ''}"></div>
+                <div class="form-group"><label>ATR Multiplier</label><input type="number" step="0.1" id="set_atr_multiplier" class="form-input" value="${s.atr_multiplier || ''}"></div>
+
+                <h4 style="margin:20px 0 0 0; padding-bottom:5px; border-bottom:2px solid var(--primary-blue); color:var(--primary-blue);">📈 ตัวกรองเทรนด์ (Trend Filter)</h4>
+                <div class="form-group"><label>Use Trend Filter</label>
+                    <select id="set_use_trend_filter" class="form-input">
+                        <option value="true" ${s.use_trend_filter ? 'selected' : ''}>เปิดใช้งาน</option>
+                        <option value="false" ${!s.use_trend_filter ? 'selected' : ''}>ปิด</option>
+                    </select></div>
+                <div class="form-group"><label>EMA Fast</label><input type="number" step="1" id="set_ema_fast" class="form-input" value="${s.ema_fast || ''}"></div>
+                <div class="form-group"><label>EMA Slow</label><input type="number" step="1" id="set_ema_slow" class="form-input" value="${s.ema_slow || ''}"></div>
+                <div class="form-group"><label>RSI Period</label><input type="number" step="1" id="set_rsi_period" class="form-input" value="${s.rsi_period || ''}"></div>
+                <div class="form-group"><label>RSI Timeframe</label>
+                    <select id="set_rsi_tf" class="form-input">
+                        <option value="1" ${s.rsi_tf == 1 ? 'selected' : ''}>M1</option>
+                        <option value="5" ${s.rsi_tf == 5 ? 'selected' : ''}>M5</option>
+                        <option value="15" ${s.rsi_tf == 15 ? 'selected' : ''}>M15</option>
+                        <option value="30" ${s.rsi_tf == 30 ? 'selected' : ''}>M30</option>
+                        <option value="60" ${s.rsi_tf == 60 ? 'selected' : ''}>H1</option>
+                        <option value="240" ${s.rsi_tf == 240 ? 'selected' : ''}>H4</option>
+                        <option value="1440" ${s.rsi_tf == 1440 ? 'selected' : ''}>D1</option>
+                    </select></div>
+                <div class="form-group"><label>RSI Buy Level (Oversold)</label><input type="number" step="1" id="set_rsi_buy" class="form-input" value="${s.rsi_buy || ''}"></div>
+                <div class="form-group"><label>RSI Sell Level (Overbought)</label><input type="number" step="1" id="set_rsi_sell" class="form-input" value="${s.rsi_sell || ''}"></div>
+
+                <h4 style="margin:20px 0 0 0; padding-bottom:5px; border-bottom:2px solid var(--primary-blue); color:var(--primary-blue);">🔄 Trailing Stop (ตะกร้า)</h4>
+                <div class="form-group"><label>Use Basket Trail</label>
+                    <select id="set_use_basket_trail" class="form-input">
+                        <option value="true" ${s.use_basket_trail ? 'selected' : ''}>เปิดใช้งาน</option>
+                        <option value="false" ${!s.use_basket_trail ? 'selected' : ''}>ปิด</option>
+                    </select></div>
+                <div class="form-group"><label>Basket Trail Start ($)</label><input type="number" step="0.5" id="set_trail_start" class="form-input" value="${s.trail_start || ''}"></div>
+                <div class="form-group"><label>Basket Trail Step ($)</label><input type="number" step="0.5" id="set_trail_step" class="form-input" value="${s.trail_step || ''}"></div>
+
+                <button class="btn-save" id="btnSaveSettings" onclick="saveSettings()" style="margin-top:15px;">บันทึกการตั้งค่า Grid</button>`;
+            }
+            formEl.innerHTML = html;
+        }
+
+        // Save Settings Function (strategy-aware)
+        async function saveSettings() {
+            const btn = document.getElementById('btnSaveSettings');
+            if (!btn) return;
+            const originalText = btn.innerText;
+            btn.innerText = 'กำลังบันทึก...';
+            btn.style.opacity = '0.7';
+
+            let settingsPayload = {};
+
+            if (currentStrategy === 'BTC_MOMENTUM') {
+                settingsPayload = {
+                    ema_fast: parseInt(document.getElementById('set_btc_ema_fast').value),
+                    ema_slow: parseInt(document.getElementById('set_btc_ema_slow').value),
+                    trend_tf: parseInt(document.getElementById('set_btc_trend_tf').value),
+                    rsi_period: parseInt(document.getElementById('set_btc_rsi_period').value),
+                    rsi_tf: parseInt(document.getElementById('set_btc_rsi_tf').value),
+                    rsi_buy: parseInt(document.getElementById('set_btc_rsi_buy').value),
+                    rsi_sell: parseInt(document.getElementById('set_btc_rsi_sell').value),
+                    risk_reward: parseFloat(document.getElementById('set_btc_risk_reward').value),
+                    atr_sl_mult: parseFloat(document.getElementById('set_btc_atr_sl_mult').value),
+                    lot_size: parseFloat(document.getElementById('set_btc_lot_size').value),
+                    trail_atr_mult: parseFloat(document.getElementById('set_btc_trail_atr_mult').value),
+                    partial_tp: document.getElementById('set_btc_partial_tp').value === 'true'
+                };
+            } else if (currentStrategy === 'XAU_TREND') {
+                settingsPayload = {
+                    ema_fast: parseInt(document.getElementById('set_xau_ema_fast').value),
+                    ema_slow: parseInt(document.getElementById('set_xau_ema_slow').value),
+                    trend_tf: parseInt(document.getElementById('set_xau_trend_tf').value),
+                    adx_period: parseInt(document.getElementById('set_xau_adx_period').value),
+                    adx_min: parseInt(document.getElementById('set_xau_adx_min').value),
+                    rsi_period: parseInt(document.getElementById('set_xau_rsi_period').value),
+                    rsi_tf: parseInt(document.getElementById('set_xau_rsi_tf').value),
+                    rsi_buy: parseInt(document.getElementById('set_xau_rsi_buy').value),
+                    rsi_sell: parseInt(document.getElementById('set_xau_rsi_sell').value),
+                    risk_reward: parseFloat(document.getElementById('set_xau_risk_reward').value),
+                    atr_sl_mult: parseFloat(document.getElementById('set_xau_atr_sl_mult').value),
+                    lot_size: parseFloat(document.getElementById('set_xau_lot_size').value),
+                    trail_atr_mult: parseFloat(document.getElementById('set_xau_trail_atr_mult').value),
+                    partial_tp: document.getElementById('set_xau_partial_tp').value === 'true',
+                    session_start: parseInt(document.getElementById('set_xau_session_start').value),
+                    session_end: parseInt(document.getElementById('set_xau_session_end').value)
+                };
+            } else {
+                settingsPayload = {
+                    start_lot: parseFloat(document.getElementById('set_start_lot').value),
+                    lot_multiplier: parseFloat(document.getElementById('set_lot_multiplier').value),
+                    max_levels: parseInt(document.getElementById('set_max_levels').value),
+                    tp_mode: parseInt(document.getElementById('set_tp_mode').value),
+                    tp_usd: parseFloat(document.getElementById('set_tp_usd').value),
+                    use_dynamic_step: document.getElementById('set_use_dynamic_step').value === 'true',
+                    grid_step: parseFloat(document.getElementById('set_grid_step').value),
+                    atr_period: parseInt(document.getElementById('set_atr_period').value),
+                    atr_multiplier: parseFloat(document.getElementById('set_atr_multiplier').value),
+                    use_trend_filter: document.getElementById('set_use_trend_filter').value === 'true',
+                    ema_fast: parseInt(document.getElementById('set_ema_fast').value),
+                    ema_slow: parseInt(document.getElementById('set_ema_slow').value),
+                    rsi_period: parseInt(document.getElementById('set_rsi_period').value),
+                    rsi_tf: parseInt(document.getElementById('set_rsi_tf').value),
+                    rsi_buy: parseInt(document.getElementById('set_rsi_buy').value),
+                    rsi_sell: parseInt(document.getElementById('set_rsi_sell').value),
+                    use_basket_trail: document.getElementById('set_use_basket_trail').value === 'true',
+                    trail_start: parseFloat(document.getElementById('set_trail_start').value),
+                    trail_step: parseFloat(document.getElementById('set_trail_step').value)
+                };
+            }
+
+            try {
+                await fetch('/api/update-settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ settings: settingsPayload, account_id: currentAccountId, symbol: currentSymbol, strategy: currentStrategy })
+                });
+
+                setTimeout(() => {
+                    btn.innerText = 'บันทึกสำเร็จ!';
+                    btn.style.backgroundColor = 'var(--success)';
+                    setTimeout(() => {
+                        btn.innerText = originalText;
+                        btn.style.backgroundColor = 'var(--primary-blue)';
+                        btn.style.opacity = '1';
+                    }, 2000);
+                }, 500);
+
+            } catch (err) {
+                console.error('Error updating settings:', err);
+                btn.innerText = 'เกิดข้อผิดพลาด';
+                btn.style.backgroundColor = 'var(--danger)';
+                setTimeout(() => {
+                    btn.innerText = originalText;
+                    btn.style.backgroundColor = 'var(--primary-blue)';
+                    btn.style.opacity = '1';
+                }, 2000);
+            }
+        }
+
+        // ==========================================
+        //  Dashboard P/L Cards & Chart
+        // ==========================================
+        function updateDashboardPL() {
+            const now = new Date();
+            const todayStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+            const monthStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+
+            let todayPL = 0, monthPL = 0;
+            cachedHistoryData.forEach(t => {
+                if (!t.date) return;
+                const dateOnly = t.date.split(' ')[0];
+                if (dateOnly === todayStr) todayPL += t.profit;
+                if (dateOnly.startsWith(monthStr)) monthPL += t.profit;
+            });
+
+            // Update Today card
+            const todayEl = document.getElementById('today_pl_value');
+            const todayCard = document.getElementById('card-today-pl');
+            if (todayEl) {
+                todayEl.innerText = (todayPL >= 0 ? '+$' : '-$') + Math.abs(todayPL).toFixed(2);
+                todayEl.style.color = todayPL > 0 ? 'var(--success)' : todayPL < 0 ? 'var(--danger)' : 'var(--text-main)';
+            }
+            if (todayCard) {
+                todayCard.style.background = 'var(--card-bg)';
+                todayCard.style.boxShadow = 'none';
+                if (todayPL > 0) {
+                    todayCard.style.borderLeft = '4px solid var(--success)';
+                } else if (todayPL < 0) {
+                    todayCard.style.borderLeft = '4px solid var(--danger)';
+                } else {
+                    todayCard.style.borderLeft = '4px solid var(--text-muted)';
+                }
+            }
+
+            // Update Month card
+            const monthEl = document.getElementById('month_pl_value');
+            const monthCard = document.getElementById('card-month-pl');
+            if (monthEl) {
+                monthEl.innerText = (monthPL >= 0 ? '+$' : '-$') + Math.abs(monthPL).toFixed(2);
+                monthEl.style.color = monthPL > 0 ? 'var(--success)' : monthPL < 0 ? 'var(--danger)' : 'var(--text-main)';
+            }
+            if (monthCard) {
+                monthCard.style.background = 'var(--card-bg)';
+                monthCard.style.boxShadow = 'none';
+                if (monthPL > 0) {
+                    monthCard.style.borderLeft = '4px solid var(--success)';
+                } else if (monthPL < 0) {
+                    monthCard.style.borderLeft = '4px solid var(--danger)';
+                } else {
+                    monthCard.style.borderLeft = '4px solid var(--text-muted)';
+                }
+            }
+
+            drawMonthlyChart();
+        }
+
+        function drawMonthlyChart() {
+            const canvas = document.getElementById('monthly-chart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+
+            // HiDPI support
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            const W = rect.width;
+            const H = rect.height;
+
+            ctx.clearRect(0, 0, W, H);
+
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const monthStr = year + '-' + String(month + 1).padStart(2, '0');
+
+            // Aggregate daily
+            const dailyPL = {};
+            cachedHistoryData.forEach(t => {
+                if (!t.date) return;
+                const dateOnly = t.date.split(' ')[0];
+                if (dateOnly.startsWith(monthStr)) {
+                    const day = parseInt(dateOnly.split('-')[2], 10);
+                    dailyPL[day] = (dailyPL[day] || 0) + t.profit;
+                }
+            });
+
+            // Build data points for all days
+            const data = [];
+            for (let d = 1; d <= daysInMonth; d++) {
+                data.push(dailyPL[d] || 0);
+            }
+
+            if (data.length === 0) return;
+
+            const maxVal = Math.max(...data.map(Math.abs), 1);
+            const padL = 10, padR = 10, padT = 20, padB = 25;
+            const chartW = W - padL - padR;
+            const chartH = H - padT - padB;
+            const midY = padT + chartH / 2;
+
+            // Draw zero line
+            ctx.beginPath();
+            ctx.strokeStyle = '#E0E0E0';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4, 4]);
+            ctx.moveTo(padL, midY);
+            ctx.lineTo(W - padR, midY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw zero label
+            ctx.fillStyle = '#999';
+            ctx.font = '10px Kanit';
+            ctx.textAlign = 'right';
+            ctx.fillText('$0', padL + chartW + 5, midY + 3);
+
+            // Draw line
+            const stepX = chartW / (data.length - 1 || 1);
+            ctx.beginPath();
+            for (let i = 0; i < data.length; i++) {
+                const x = padL + i * stepX;
+                const y = midY - (data[i] / maxVal) * (chartH / 2);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.strokeStyle = '#00A3E0';
+            ctx.lineWidth = 2.5;
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+
+            // Fill gradient under the line
+            const lastX = padL + (data.length - 1) * stepX;
+            ctx.lineTo(lastX, midY);
+            ctx.lineTo(padL, midY);
+            ctx.closePath();
+            const grd = ctx.createLinearGradient(0, padT, 0, H - padB);
+            grd.addColorStop(0, 'rgba(0, 163, 224, 0.2)');
+            grd.addColorStop(1, 'rgba(0, 163, 224, 0)');
+            ctx.fillStyle = grd;
+            ctx.fill();
+
+            // Draw dots and day labels
+            ctx.textAlign = 'center';
+            for (let i = 0; i < data.length; i++) {
+                const x = padL + i * stepX;
+                const y = midY - (data[i] / maxVal) * (chartH / 2);
+
+                // Only show dots for days with data
+                if (dailyPL[i + 1] !== undefined) {
+                    ctx.beginPath();
+                    ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+                    ctx.fillStyle = data[i] >= 0 ? '#34C759' : '#FF5A5F';
+                    ctx.fill();
+                }
+
+                // Day labels (show every few days to avoid crowding)
+                if ((i + 1) % 5 === 1 || i === data.length - 1) {
+                    ctx.fillStyle = '#999';
+                    ctx.font = '9px Kanit';
+                    ctx.fillText(i + 1, x, H - 8);
+                }
+            }
+        }
+
+        // Fetch every 200 milliseconds 
+        setInterval(fetchData, 200);
+        // Refresh account list every 2 seconds for live data
+        setInterval(() => {
+            if (document.getElementById('view-accounts').classList.contains('active')) fetchAccounts();
+            // Update header badge with symbol
+            const badge = document.getElementById('account-badge');
+            if (badge) {
+                const badgeIcon = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>';
+                const label = currentSymbol ? `${badgeIcon} ${currentAccountId} · ${currentSymbol} ` : `${badgeIcon} ${currentAccountId === 'default' ? 'Default' : currentAccountId}`;
+                badge.innerHTML = label;
+            }
+        }, 2000);
+        fetchData();
+        // ==========================================
+        //  Web Push Notification Setup
+        // ==========================================
+        let swRegistration = null;
+
+        // Register Service Worker on load
+        if ('serviceWorker' in navigator && 'PushManager' in window) {
+            navigator.serviceWorker.register('/sw.js')
+                .then(function (swReg) {
+                    console.log('Service Worker is registered', swReg);
+                    swRegistration = swReg;
+                    checkSubscriptionStatus();
+                })
+                .catch(function (error) {
+                    console.error('Service Worker Error', error);
+                });
+        } else {
+            // Note: iOS Safari requires the app to be added to Home Screen to support PushManager
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            if (isIOS && !window.navigator.standalone) {
+                document.getElementById('pushStatusMsg').innerText = "กรุณากด Share -> Add to Home Screen ก่อนใช้งานแจ้งเตือน";
+            } else {
+                document.getElementById('pushStatusMsg').innerText = "บราวเซอร์/อุปกรณ์นี้ไม่รองรับ Push Notifications";
+            }
+            document.getElementById('btnSubscribePush').style.display = 'none';
+        }
+
+        function checkSubscriptionStatus() {
+            if (!swRegistration) return;
+            swRegistration.pushManager.getSubscription()
+                .then(function (subscription) {
+                    const btn = document.getElementById('btnSubscribePush');
+                    const msg = document.getElementById('pushStatusMsg');
+
+                    const checkIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+                    const bellIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>';
+
+                    if (subscription) {
+                        btn.innerHTML = `${checkIcon} เปิดใช้งานแล้ว`;
+                        btn.style.background = "var(--success)";
+                        btn.disabled = true;
+                        msg.innerText = "ระบบพร้อมส่งแจ้งเตือนเข้าเครื่องนี้แล้ว";
+                    } else {
+                        btn.innerHTML = `${bellIcon} เปิดใช้งาน`;
+                        btn.style.background = "var(--primary-blue)";
+                        btn.disabled = false;
+                        msg.innerText = "กดเปิดใช้งานเพื่อรับแจ้งเตือนเมื่อ EA ทำงาน";
+                    }
+                });
+        }
+
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding)
+                .replace(/\-/g, '+')
+                .replace(/_/g, '/');
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
+
+        async function subscribeToPush() {
+            const btn = document.getElementById('btnSubscribePush');
+            const msg = document.getElementById('pushStatusMsg');
+
+            if (Notification.permission === 'denied') {
+                msg.innerText = "คุณบล็อคการแจ้งเตือนไว้ กรุณาไปตั้งค่าในบราวเซอร์";
+                return;
+            }
+
+            btn.innerText = "กำลังดำเนินการ...";
+            btn.disabled = true;
+
+            try {
+                // BUG FIX for Safari: Notification.requestPermission() MUST be called 
+                // immediately within the click event handler before any other awaits
+                msg.innerText = "[1/4] ขออนุญาตแจ้งเตือนจากเครื่อง...";
+                const permission = await Notification.requestPermission();
+                if (permission !== 'granted') {
+                    throw new Error("ไม่อนุญาตการแจ้งเตือน");
+                }
+
+                msg.innerText = "[2/4] กำลังเชื่อมต่อ Service Worker...";
+                swRegistration = await navigator.serviceWorker.ready;
+
+                msg.innerText = "[3/4] กำลังขอรหัส VAPID จาก Server...";
+                const response = await fetch('/api/vapid-public-key');
+                if (!response.ok) throw new Error("ดึง VAPID Key ไม่สำเร็จ");
+                const vapidPublicKey = await response.text();
+                const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
+
+                msg.innerText = "[4/4] กำลังลงทะเบียน Push รอกดอนุญาตอีกครั้ง (ถ้ามี)...";
+                const subscription = await swRegistration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: applicationServerKey
+                });
+
+                msg.innerText = "กำลังบันทึกข้อมูลเข้าระบบ...";
+                const subResponse = await fetch('/api/subscribe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(subscription)
+                });
+
+                if (!subResponse.ok) throw new Error("เซิฟเวอร์ปฏิเสธการเชื่อมต่อ");
+
+                const checkIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+                const bellIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>';
+
+                btn.innerHTML = `${checkIcon} เปิดใช้งานแล้ว`;
+                btn.style.background = "var(--success)";
+                msg.innerText = "สมัครรับแจ้งเตือนสำเร็จ!";
+            } catch (error) {
+                console.error('Failed to subscribe the user: ', error);
+                const bellIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>';
+                btn.innerHTML = `${bellIcon} เปิดใช้งาน`;
+                btn.disabled = false;
+                msg.innerText = "Error: " + error.message;
+            }
+        }
+
+        async function testPushFromWeb() {
+            const btn = document.getElementById('btnTestPush');
+            const msg = document.getElementById('pushStatusMsg');
+            const flaskIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 2v7.31"></path><path d="M14 9.3V1.99"></path><path d="M8.5 2h7"></path><path d="M14 9.3a6.5 6.5 0 1 1-4 0"></path><path d="M5.52 16h12.96"></path></svg>';
+            const checkIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+            const failIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+
+            btn.disabled = true;
+            btn.innerHTML = `${flaskIcon} กำลังส่ง...`;
+            try {
+                const res = await fetch('/api/test-push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+                if (res.ok) {
+                    msg.innerHTML = `${checkIcon} ส่งทดสอบแล้ว! รอสักครู่...`;
+                    msg.style.color = "var(--success)";
+                } else {
+                    msg.innerHTML = `${failIcon} Server ตอบกลับ: ${res.status}`;
+                    msg.style.color = "var(--danger)";
+                }
+            } catch (e) {
+                msg.innerHTML = `${failIcon} ส่งไม่ได้: ${e.message}`;
+                msg.style.color = "var(--danger)";
+            }
+            btn.disabled = false;
+            btn.innerHTML = `${flaskIcon} ทดสอบแจ้งเตือน`;
+        }
+
+    </script>
+</body>
+
+</html>
