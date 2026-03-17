@@ -1,3 +1,5 @@
+#![windows_subsystem = "windows"]
+
 use axum::{
     extract::{Query, State, Json},
     routing::{get, post},

@@ -24,19 +24,19 @@ jobs:
 
       - name: Rename Binary
         working-directory: ./X-Dashbord/ea-server
-        run: Rename-Item -Path "target\release\ea-server.exe" -NewName "EA_Smart_Server_v1.3.0.exe"
+        run: Rename-Item -Path "target\release\ea-server.exe" -NewName "EA_Smart_Server_v1.3.1.exe"
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: EA_Smart_Server_Windows
-          path: X-Dashbord/ea-server/target/release/EA_Smart_Server_v1.3.0.exe
+          path: X-Dashbord/ea-server/target/release/EA_Smart_Server_v1.3.1.exe
           
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "v1.3.0"
-          name: "EA Smart Server v1.3.0 (FLTK Graphics Fix)"
+          tag_name: "v1.3.1"
+          name: "EA Smart Server v1.3.1 (Hide Console Window)"
           body: |
             🚀 **EA Smart Server — Native Edition**
             
@@ -46,8 +46,8 @@ jobs:
             - Replaces the old Node.js and Tauri versions with a single standalone `.exe` file.
             
             **Downloads:**
-            - `EA_Smart_Server_v1.3.0.exe` — Standalone Executable (No installation required)
-          files: X-Dashbord/ea-server/target/release/EA_Smart_Server_v1.3.0.exe
+            - `EA_Smart_Server_v1.3.1.exe` — Standalone Executable (No installation required)
+          files: X-Dashbord/ea-server/target/release/EA_Smart_Server_v1.3.1.exe
           make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
