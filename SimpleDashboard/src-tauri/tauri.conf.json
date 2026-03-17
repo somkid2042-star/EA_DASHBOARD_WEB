@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "ea-dashboard-web",
-  "version": "0.1.0",
-  "identifier": "com.tauri.dev",
+  "version": "1.1.0",
+  "identifier": "com.eadashboard.app",
   "build": {
     "frontendDist": "../",
     "devUrl": "http://localhost:3000",
