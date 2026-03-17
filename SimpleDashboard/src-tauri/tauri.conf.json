@@ -4,7 +4,7 @@
   "version": "1.1.0",
   "identifier": "com.eadashboard.app",
   "build": {
-    "frontendDist": "../",
+    "frontendDist": "../www",
     "devUrl": "http://localhost:3000",
     "beforeDevCommand": "",
     "beforeBuildCommand": ""

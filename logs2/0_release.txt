@@ -1,0 +1,320 @@
+﻿2026-03-17T13:05:08.7657967Z Current runner version: '2.332.0'
+2026-03-17T13:05:08.7895800Z ##[group]Runner Image Provisioner
+2026-03-17T13:05:08.7896992Z Hosted Compute Agent
+2026-03-17T13:05:08.7897889Z Version: 20260213.493
+2026-03-17T13:05:08.7898781Z Commit: 5c115507f6dd24b8de37d8bbe0bb4509d0cc0fa3
+2026-03-17T13:05:08.7899881Z Build Date: 2026-02-13T00:28:41Z
+2026-03-17T13:05:08.7900888Z Worker ID: {061b6a7c-e064-4111-8a7a-db4bd3ddcec1}
+2026-03-17T13:05:08.7901969Z Azure Region: northcentralus
+2026-03-17T13:05:08.7902891Z ##[endgroup]
+2026-03-17T13:05:08.7905476Z ##[group]Operating System
+2026-03-17T13:05:08.7906461Z Microsoft Windows Server 2025
+2026-03-17T13:05:08.7907307Z 10.0.26100
+2026-03-17T13:05:08.7908005Z Datacenter
+2026-03-17T13:05:08.7908667Z ##[endgroup]
+2026-03-17T13:05:08.7909395Z ##[group]Runner Image
+2026-03-17T13:05:08.7910195Z Image: windows-2025
+2026-03-17T13:05:08.7910919Z Version: 20260302.43.1
+2026-03-17T13:05:08.7912996Z Included Software: https://github.com/actions/runner-images/blob/win25/20260302.43/images/windows/Windows2025-Readme.md
+2026-03-17T13:05:08.7915461Z Image Release: https://github.com/actions/runner-images/releases/tag/win25%2F20260302.43
+2026-03-17T13:05:08.7916926Z ##[endgroup]
+2026-03-17T13:05:08.7918629Z ##[group]GITHUB_TOKEN Permissions
+2026-03-17T13:05:08.7921184Z Contents: write
+2026-03-17T13:05:08.7922006Z Metadata: read
+2026-03-17T13:05:08.7922695Z ##[endgroup]
+2026-03-17T13:05:08.7926063Z Secret source: Actions
+2026-03-17T13:05:08.7927050Z Prepare workflow directory
+2026-03-17T13:05:08.9062752Z Prepare all required actions
+2026-03-17T13:05:08.9118315Z Getting action download info
+2026-03-17T13:05:09.2780019Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+2026-03-17T13:05:09.4601982Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+2026-03-17T13:05:09.7273480Z Download action repository 'dtolnay/rust-toolchain@stable' (SHA:631a55b12751854ce901bb631d5902ceb48146f7)
+2026-03-17T13:05:10.0802648Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+2026-03-17T13:05:10.4484223Z Download action repository 'softprops/action-gh-release@v2' (SHA:153bb8e04406b158c6c84fc1615b65b24149a1fe)
+2026-03-17T13:05:11.5510321Z Complete job name: release
+2026-03-17T13:05:12.3793720Z ##[group]Run actions/checkout@v4
+2026-03-17T13:05:12.3795224Z with:
+2026-03-17T13:05:12.3795982Z   repository: somkid2042-star/EA_DASHBOARD_WEB
+2026-03-17T13:05:12.3797331Z   token: ***
+2026-03-17T13:05:12.3797990Z   ssh-strict: true
+2026-03-17T13:05:12.3798678Z   ssh-user: git
+2026-03-17T13:05:12.3799372Z   persist-credentials: true
+2026-03-17T13:05:12.3800147Z   clean: true
+2026-03-17T13:05:12.3800847Z   sparse-checkout-cone-mode: true
+2026-03-17T13:05:12.3801691Z   fetch-depth: 1
+2026-03-17T13:05:12.3802382Z   fetch-tags: false
+2026-03-17T13:05:12.3803197Z   show-progress: true
+2026-03-17T13:05:12.3804263Z   lfs: false
+2026-03-17T13:05:12.3804960Z   submodules: false
+2026-03-17T13:05:12.3805672Z   set-safe-directory: true
+2026-03-17T13:05:12.3806745Z ##[endgroup]
+2026-03-17T13:05:14.3481309Z Syncing repository: somkid2042-star/EA_DASHBOARD_WEB
+2026-03-17T13:05:14.3484169Z ##[group]Getting Git version info
+2026-03-17T13:05:14.3485301Z Working directory is 'D:\a\EA_DASHBOARD_WEB\EA_DASHBOARD_WEB'
+2026-03-17T13:05:14.3487333Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-03-17T13:05:14.3488151Z git version 2.53.0.windows.1
+2026-03-17T13:05:14.3490916Z ##[endgroup]
+2026-03-17T13:05:15.3418697Z Temporarily overriding HOME='D:\a\_temp\370cf3c7-b932-4ee1-854c-d563d61622d8' before making global git config changes
+2026-03-17T13:05:15.3426448Z Adding repository directory to the temporary git global config as a safe directory
+2026-03-17T13:05:15.3432872Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\EA_DASHBOARD_WEB\EA_DASHBOARD_WEB
+2026-03-17T13:05:15.3468688Z Deleting the contents of 'D:\a\EA_DASHBOARD_WEB\EA_DASHBOARD_WEB'
+2026-03-17T13:05:15.3534105Z ##[group]Initializing the repository
+2026-03-17T13:05:15.3551303Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\EA_DASHBOARD_WEB\EA_DASHBOARD_WEB
+2026-03-17T13:05:15.3555316Z Initialized empty Git repository in D:/a/EA_DASHBOARD_WEB/EA_DASHBOARD_WEB/.git/
+2026-03-17T13:05:15.3605893Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/somkid2042-star/EA_DASHBOARD_WEB
+2026-03-17T13:05:15.3656805Z ##[endgroup]
+2026-03-17T13:05:15.3707998Z ##[group]Disabling automatic garbage collection
+2026-03-17T13:05:15.3724997Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+2026-03-17T13:05:15.3787897Z ##[endgroup]
+2026-03-17T13:05:15.3812607Z ##[group]Setting up auth
+2026-03-17T13:05:15.3836132Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-03-17T13:05:15.3869070Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-03-17T13:05:15.3914961Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-03-17T13:05:15.4054055Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-03-17T13:05:15.9489263Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-03-17T13:05:15.9856797Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-03-17T13:05:16.6338588Z [command]"C:\Program Files\Git\bin\git.exe" config --local http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+2026-03-17T13:05:16.6738838Z ##[endgroup]
+2026-03-17T13:05:16.6789880Z ##[group]Fetching the repository
+2026-03-17T13:05:16.6904674Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +b6ec1513a3bcdcb6ac719da464612fee733c6fdf:refs/remotes/origin/main
+2026-03-17T13:05:17.7376735Z From https://github.com/somkid2042-star/EA_DASHBOARD_WEB
+2026-03-17T13:05:17.7377824Z  * [new ref]         b6ec1513a3bcdcb6ac719da464612fee733c6fdf -> origin/main
+2026-03-17T13:05:17.7919535Z ##[endgroup]
+2026-03-17T13:05:17.7920407Z ##[group]Determining the checkout info
+2026-03-17T13:05:17.7921287Z ##[endgroup]
+2026-03-17T13:05:17.7927166Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+2026-03-17T13:05:17.8472208Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+2026-03-17T13:05:17.8860042Z ##[group]Checking out the ref
+2026-03-17T13:05:17.8864324Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force -B main refs/remotes/origin/main
+2026-03-17T13:05:17.9718692Z Switched to a new branch 'main'
+2026-03-17T13:05:17.9753671Z branch 'main' set up to track 'origin/main'.
+2026-03-17T13:05:17.9825372Z ##[endgroup]
+2026-03-17T13:05:18.0333607Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+2026-03-17T13:05:18.0678668Z b6ec1513a3bcdcb6ac719da464612fee733c6fdf
+2026-03-17T13:05:18.4766312Z ##[group]Run actions/setup-node@v4
+2026-03-17T13:05:18.4766682Z with:
+2026-03-17T13:05:18.4766890Z   node-version: 18
+2026-03-17T13:05:18.4767095Z   always-auth: false
+2026-03-17T13:05:18.4767336Z   check-latest: false
+2026-03-17T13:05:18.4767808Z   token: ***
+2026-03-17T13:05:18.4767987Z ##[endgroup]
+2026-03-17T13:05:18.8939694Z Attempting to download 18...
+2026-03-17T13:05:19.4612112Z Acquiring 18.20.8 - x64 from https://github.com/actions/node-versions/releases/download/18.20.8-14110393767/node-18.20.8-win32-x64.7z
+2026-03-17T13:05:20.0222947Z Extracting ...
+2026-03-17T13:05:22.7027509Z Adding to the cache ...
+2026-03-17T13:05:27.2101184Z ##[group]Environment details
+2026-03-17T13:05:28.3071265Z node: v18.20.8
+2026-03-17T13:05:28.3072099Z npm: 10.8.2
+2026-03-17T13:05:28.3072604Z yarn: 1.22.22
+2026-03-17T13:05:28.3073413Z ##[endgroup]
+2026-03-17T13:05:28.3515570Z ##[group]Run dtolnay/rust-toolchain@stable
+2026-03-17T13:05:28.3515896Z with:
+2026-03-17T13:05:28.3516068Z   toolchain: stable
+2026-03-17T13:05:28.3516240Z ##[endgroup]
+2026-03-17T13:05:28.3770489Z ##[group]Run : parse toolchain version
+2026-03-17T13:05:28.3770832Z [36;1m: parse toolchain version[0m
+2026-03-17T13:05:28.3771079Z [36;1mif [[ -z $toolchain ]]; then[0m
+2026-03-17T13:05:28.3771561Z [36;1m  # GitHub does not enforce `required: true` inputs itself. https://github.com/actions/runner/issues/1070[0m
+2026-03-17T13:05:28.3772084Z [36;1m  echo "'toolchain' is a required input" >&2[0m
+2026-03-17T13:05:28.3772337Z [36;1m  exit 1[0m
+2026-03-17T13:05:28.3772638Z [36;1melif [[ $toolchain =~ ^stable' '[0-9]+' '(year|month|week|day)s?' 'ago$ ]]; then[0m
+2026-03-17T13:05:28.3773008Z [36;1m  if [[ Windows == macOS ]]; then[0m
+2026-03-17T13:05:28.3773530Z [36;1m    echo "toolchain=1.$((($(date -v-$(sed 's/stable \([0-9]*\) \(.\).*/\1\2/' <<< $toolchain) +%s)/60/60/24-16569)/7/6))" >> $GITHUB_OUTPUT[0m
+2026-03-17T13:05:28.3773992Z [36;1m  else[0m
+2026-03-17T13:05:28.3774345Z [36;1m    echo "toolchain=1.$((($(date --date "${toolchain#stable }" +%s)/60/60/24-16569)/7/6))" >> $GITHUB_OUTPUT[0m
+2026-03-17T13:05:28.3774753Z [36;1m  fi[0m
+2026-03-17T13:05:28.3774989Z [36;1melif [[ $toolchain =~ ^stable' 'minus' '[0-9]+' 'releases?$ ]]; then[0m
+2026-03-17T13:05:28.3775467Z [36;1m  echo "toolchain=1.$((($(date +%s)/60/60/24-16569)/7/6-${toolchain//[^0-9]/}))" >> $GITHUB_OUTPUT[0m
+2026-03-17T13:05:28.3775875Z [36;1melif [[ $toolchain =~ ^1\.[0-9]+$ ]]; then[0m
+2026-03-17T13:05:28.3776347Z [36;1m  echo "toolchain=1.$((i=${toolchain#1.}, c=($(date +%s)/60/60/24-16569)/7/6, i+9*i*(10*i<=c)+90*i*(100*i<=c)))" >> $GITHUB_OUTPUT[0m
+2026-03-17T13:05:28.3776797Z [36;1melse[0m
+2026-03-17T13:05:28.3776990Z [36;1m  echo "toolchain=$toolchain" >> $GITHUB_OUTPUT[0m
+2026-03-17T13:05:28.3777235Z [36;1mfi[0m
+2026-03-17T13:05:28.3799965Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+2026-03-17T13:05:28.3800343Z env:
+2026-03-17T13:05:28.3800483Z   toolchain: stable
+2026-03-17T13:05:28.3800655Z ##[endgroup]
+2026-03-17T13:05:28.5445350Z ##[group]Run : construct rustup command line
+2026-03-17T13:05:28.5445652Z [36;1m: construct rustup command line[0m
+2026-03-17T13:05:28.5446062Z [36;1mecho "targets=$(for t in ${targets//,/ }; do echo -n ' --target' $t; done)" >> $GITHUB_OUTPUT[0m
+2026-03-17T13:05:28.5446669Z [36;1mecho "components=$(for c in ${components//,/ }; do echo -n ' --component' $c; done)" >> $GITHUB_OUTPUT[0m
+2026-03-17T13:05:28.5447109Z [36;1mecho "downgrade=" >> $GITHUB_OUTPUT[0m
+2026-03-17T13:05:28.5464306Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+2026-03-17T13:05:28.5464666Z env:
+2026-03-17T13:05:28.5464797Z   targets: 
+2026-03-17T13:05:28.5464940Z   components: 
+2026-03-17T13:05:28.5465082Z ##[endgroup]
+2026-03-17T13:05:28.6332539Z ##[group]Run : set $CARGO_HOME
+2026-03-17T13:05:28.6333120Z [36;1m: set $CARGO_HOME[0m
+2026-03-17T13:05:28.6333416Z [36;1mecho CARGO_HOME=${CARGO_HOME:-"$USERPROFILE\.cargo"} >> $GITHUB_ENV[0m
+2026-03-17T13:05:28.6349628Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+2026-03-17T13:05:28.6349990Z ##[endgroup]
+2026-03-17T13:05:28.6941913Z ##[group]Run : install rustup if needed on windows
+2026-03-17T13:05:28.6942237Z [36;1m: install rustup if needed on windows[0m
+2026-03-17T13:05:28.6942501Z [36;1mif ! command -v rustup &>/dev/null; then[0m
+2026-03-17T13:05:28.6943221Z [36;1m  curl --proto '=https' --tlsv1.2 --retry 10 --retry-connrefused --location --silent --show-error --fail https://win.rustup.rs/x86_64 --output 'D:\a\_temp\rustup-init.exe'[0m
+2026-03-17T13:05:28.6944226Z [36;1m  'D:\a\_temp\rustup-init.exe' --default-toolchain none --no-modify-path -y[0m
+2026-03-17T13:05:28.6944610Z [36;1m  echo "$CARGO_HOME\bin" >> $GITHUB_PATH[0m
+2026-03-17T13:05:28.6944842Z [36;1mfi[0m
+2026-03-17T13:05:28.6962782Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+2026-03-17T13:05:28.6963219Z env:
+2026-03-17T13:05:28.6963392Z   CARGO_HOME: C:\Users\runneradmin\.cargo
+2026-03-17T13:05:28.6963629Z ##[endgroup]
+2026-03-17T13:05:28.7618315Z ##[group]Run rustup toolchain install stable --profile minimal --no-self-update
+2026-03-17T13:05:28.7618815Z [36;1mrustup toolchain install stable --profile minimal --no-self-update[0m
+2026-03-17T13:05:28.7648073Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+2026-03-17T13:05:28.7648443Z env:
+2026-03-17T13:05:28.7648604Z   CARGO_HOME: C:\Users\runneradmin\.cargo
+2026-03-17T13:05:28.7648864Z   RUSTUP_PERMIT_COPY_RENAME: 1
+2026-03-17T13:05:28.7649052Z ##[endgroup]
+2026-03-17T13:05:31.9281256Z info: syncing channel updates for 'stable-x86_64-pc-windows-msvc'
+2026-03-17T13:05:32.3626462Z info: latest update on 2026-03-05, rust version 1.94.0 (4a4ef493e 2026-03-02)
+2026-03-17T13:05:32.4112769Z info: downloading component 'clippy'
+2026-03-17T13:05:32.5034238Z info: downloading component 'rustfmt'
+2026-03-17T13:05:32.5763283Z info: downloading component 'rust-std' for 'x86_64-pc-windows-gnu'
+2026-03-17T13:05:33.0369089Z info: downloading component 'rust-std' for 'i686-pc-windows-msvc'
+2026-03-17T13:05:33.4402057Z info: downloading component 'cargo'
+2026-03-17T13:05:33.6163914Z info: downloading component 'rust-std'
+2026-03-17T13:05:33.9863304Z info: downloading component 'rustc'
+2026-03-17T13:05:35.1024691Z info: removing previous version of component 'clippy'
+2026-03-17T13:05:35.1425669Z info: removing previous version of component 'rustfmt'
+2026-03-17T13:05:35.1849440Z info: removing previous version of component 'rust-std' for 'x86_64-pc-windows-gnu'
+2026-03-17T13:05:35.2597496Z info: removing previous version of component 'rust-std' for 'i686-pc-windows-msvc'
+2026-03-17T13:05:35.3168446Z info: removing previous version of component 'cargo'
+2026-03-17T13:05:35.4462060Z info: removing previous version of component 'rust-std'
+2026-03-17T13:05:35.5145645Z info: removing previous version of component 'rustc'
+2026-03-17T13:05:35.6803397Z info: installing component 'clippy'
+2026-03-17T13:05:36.1852780Z info: installing component 'rustfmt'
+2026-03-17T13:05:36.4794817Z info: installing component 'rust-std' for 'x86_64-pc-windows-gnu'
+2026-03-17T13:05:38.4295373Z info: installing component 'rust-std' for 'i686-pc-windows-msvc'
+2026-03-17T13:05:40.2140579Z info: installing component 'cargo'
+2026-03-17T13:05:40.8844105Z info: installing component 'rust-std'
+2026-03-17T13:05:42.7643588Z info: installing component 'rustc'
+2026-03-17T13:05:48.8699884Z 
+2026-03-17T13:05:48.9046800Z   stable-x86_64-pc-windows-msvc updated - rustc 1.94.0 (4a4ef493e 2026-03-02) (from rustc 1.93.1 (01f6ddf75 2026-02-11))
+2026-03-17T13:05:48.9052127Z 
+2026-03-17T13:05:48.9355678Z ##[group]Run rustup default stable
+2026-03-17T13:05:48.9355937Z [36;1mrustup default stable[0m
+2026-03-17T13:05:48.9374225Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+2026-03-17T13:05:48.9374603Z env:
+2026-03-17T13:05:48.9374779Z   CARGO_HOME: C:\Users\runneradmin\.cargo
+2026-03-17T13:05:48.9375008Z ##[endgroup]
+2026-03-17T13:05:49.0218249Z info: using existing install for 'stable-x86_64-pc-windows-msvc'
+2026-03-17T13:05:49.0634958Z info: default toolchain set to 'stable-x86_64-pc-windows-msvc'
+2026-03-17T13:05:49.0635473Z 
+2026-03-17T13:05:49.0890050Z   stable-x86_64-pc-windows-msvc unchanged - rustc 1.94.0 (4a4ef493e 2026-03-02)
+2026-03-17T13:05:49.0891043Z 
+2026-03-17T13:05:49.1160378Z ##[group]Run : create cachekey
+2026-03-17T13:05:49.1160803Z [36;1m: create cachekey[0m
+2026-03-17T13:05:49.1161570Z [36;1mDATE=$(rustc +stable --version --verbose | sed -ne 's/^commit-date: \(20[0-9][0-9]\)-\([01][0-9]\)-\([0-3][0-9]\)$/\1\2\3/p')[0m
+2026-03-17T13:05:49.1162191Z [36;1mHASH=$(rustc +stable --version --verbose | sed -ne 's/^commit-hash: //p')[0m
+2026-03-17T13:05:49.1163496Z [36;1mecho "cachekey=$(echo $DATE$HASH | head -c12)" >> $GITHUB_OUTPUT[0m
+2026-03-17T13:05:49.1181321Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+2026-03-17T13:05:49.1181701Z env:
+2026-03-17T13:05:49.1181869Z   CARGO_HOME: C:\Users\runneradmin\.cargo
+2026-03-17T13:05:49.1182109Z ##[endgroup]
+2026-03-17T13:05:50.0746861Z ##[group]Run : disable incremental compilation
+2026-03-17T13:05:50.0747392Z [36;1m: disable incremental compilation[0m
+2026-03-17T13:05:50.0748370Z [36;1mif [ -z "${CARGO_INCREMENTAL+set}" ]; then[0m
+2026-03-17T13:05:50.0748888Z [36;1m  echo CARGO_INCREMENTAL=0 >> $GITHUB_ENV[0m
+2026-03-17T13:05:50.0749296Z [36;1mfi[0m
+2026-03-17T13:05:50.0777740Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+2026-03-17T13:05:50.0778367Z env:
+2026-03-17T13:05:50.0778680Z   CARGO_HOME: C:\Users\runneradmin\.cargo
+2026-03-17T13:05:50.0779046Z ##[endgroup]
+2026-03-17T13:05:50.1499583Z ##[group]Run : enable colors in Cargo output
+2026-03-17T13:05:50.1500110Z [36;1m: enable colors in Cargo output[0m
+2026-03-17T13:05:50.1500585Z [36;1mif [ -z "${CARGO_TERM_COLOR+set}" ]; then[0m
+2026-03-17T13:05:50.1501096Z [36;1m  echo CARGO_TERM_COLOR=always >> $GITHUB_ENV[0m
+2026-03-17T13:05:50.1501538Z [36;1mfi[0m
+2026-03-17T13:05:50.1522294Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+2026-03-17T13:05:50.1522664Z env:
+2026-03-17T13:05:50.1522839Z   CARGO_HOME: C:\Users\runneradmin\.cargo
+2026-03-17T13:05:50.1523082Z   CARGO_INCREMENTAL: 0
+2026-03-17T13:05:50.1523252Z ##[endgroup]
+2026-03-17T13:05:50.2311421Z ##[group]Run : enable Cargo sparse registry
+2026-03-17T13:05:50.2311934Z [36;1m: enable Cargo sparse registry[0m
+2026-03-17T13:05:50.2312513Z [36;1m# implemented in 1.66, stabilized in 1.68, made default in 1.70[0m
+2026-03-17T13:05:50.2313608Z [36;1mif [ -z "${CARGO_REGISTRIES_CRATES_IO_PROTOCOL+set}" -o -f "D:\a\_temp"/.implicit_cargo_registries_crates_io_protocol ]; then[0m
+2026-03-17T13:05:50.2314759Z [36;1m  if rustc +stable --version --verbose | grep -q '^release: 1\.6[89]\.'; then[0m
+2026-03-17T13:05:50.2315532Z [36;1m    touch "D:\a\_temp"/.implicit_cargo_registries_crates_io_protocol || true[0m
+2026-03-17T13:05:50.2316411Z [36;1m    echo CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse >> $GITHUB_ENV[0m
+2026-03-17T13:05:50.2317225Z [36;1m  elif rustc +stable --version --verbose | grep -q '^release: 1\.6[67]\.'; then[0m
+2026-03-17T13:05:50.2318091Z [36;1m    touch "D:\a\_temp"/.implicit_cargo_registries_crates_io_protocol || true[0m
+2026-03-17T13:05:50.2318861Z [36;1m    echo CARGO_REGISTRIES_CRATES_IO_PROTOCOL=git >> $GITHUB_ENV[0m
+2026-03-17T13:05:50.2319416Z [36;1m  fi[0m
+2026-03-17T13:05:50.2319666Z [36;1mfi[0m
+2026-03-17T13:05:50.2349563Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+2026-03-17T13:05:50.2350194Z env:
+2026-03-17T13:05:50.2350463Z   CARGO_HOME: C:\Users\runneradmin\.cargo
+2026-03-17T13:05:50.2350884Z   CARGO_INCREMENTAL: 0
+2026-03-17T13:05:50.2351180Z   CARGO_TERM_COLOR: always
+2026-03-17T13:05:50.2351490Z ##[endgroup]
+2026-03-17T13:05:50.4868562Z ##[group]Run : work around spurious network errors in curl 8.0
+2026-03-17T13:05:50.4869240Z [36;1m: work around spurious network errors in curl 8.0[0m
+2026-03-17T13:05:50.4870080Z [36;1m# https://rust-lang.zulipchat.com/#narrow/stream/246057-t-cargo/topic/timeout.20investigation[0m
+2026-03-17T13:05:50.4871057Z [36;1mif rustc +stable --version --verbose | grep -q '^release: 1\.7[01]\.'; then[0m
+2026-03-17T13:05:50.4872232Z [36;1m  echo CARGO_HTTP_MULTIPLEXING=false >> $GITHUB_ENV[0m
+2026-03-17T13:05:50.4872696Z [36;1mfi[0m
+2026-03-17T13:05:50.4899296Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+2026-03-17T13:05:50.4899909Z env:
+2026-03-17T13:05:50.4900185Z   CARGO_HOME: C:\Users\runneradmin\.cargo
+2026-03-17T13:05:50.4900582Z   CARGO_INCREMENTAL: 0
+2026-03-17T13:05:50.4900927Z   CARGO_TERM_COLOR: always
+2026-03-17T13:05:50.4901455Z ##[endgroup]
+2026-03-17T13:05:50.6616312Z ##[group]Run rustc +stable --version --verbose
+2026-03-17T13:05:50.6616829Z [36;1mrustc +stable --version --verbose[0m
+2026-03-17T13:05:50.6639277Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+2026-03-17T13:05:50.6639652Z env:
+2026-03-17T13:05:50.6639815Z   CARGO_HOME: C:\Users\runneradmin\.cargo
+2026-03-17T13:05:50.6640064Z   CARGO_INCREMENTAL: 0
+2026-03-17T13:05:50.6640248Z   CARGO_TERM_COLOR: always
+2026-03-17T13:05:50.6640439Z ##[endgroup]
+2026-03-17T13:05:50.7745133Z rustc 1.94.0 (4a4ef493e 2026-03-02)
+2026-03-17T13:05:50.7747654Z binary: rustc
+2026-03-17T13:05:50.7748214Z commit-hash: 4a4ef493e3a1488c6e321570238084b38948f6db
+2026-03-17T13:05:50.7748776Z commit-date: 2026-03-02
+2026-03-17T13:05:50.7749122Z host: x86_64-pc-windows-msvc
+2026-03-17T13:05:50.7749454Z release: 1.94.0
+2026-03-17T13:05:50.7749804Z LLVM version: 21.1.8
+2026-03-17T13:05:50.8109571Z ##[group]Run npm install -g @tauri-apps/cli@latest
+2026-03-17T13:05:50.8110148Z [36;1mnpm install -g @tauri-apps/cli@latest[0m
+2026-03-17T13:05:50.8879951Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-03-17T13:05:50.8880379Z env:
+2026-03-17T13:05:50.8880596Z   CARGO_HOME: C:\Users\runneradmin\.cargo
+2026-03-17T13:05:50.8880899Z   CARGO_INCREMENTAL: 0
+2026-03-17T13:05:50.8881124Z   CARGO_TERM_COLOR: always
+2026-03-17T13:05:50.8881355Z ##[endgroup]
+2026-03-17T13:05:59.2193544Z 
+2026-03-17T13:05:59.2194768Z added 2 packages in 3s
+2026-03-17T13:05:59.2195451Z 
+2026-03-17T13:05:59.2195882Z 1 package is looking for funding
+2026-03-17T13:05:59.2196529Z   run `npm fund` for details
+2026-03-17T13:06:00.0655785Z ##[group]Run tauri build
+2026-03-17T13:06:00.0656215Z [36;1mtauri build[0m
+2026-03-17T13:06:00.0775309Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-03-17T13:06:00.0775854Z env:
+2026-03-17T13:06:00.0776132Z   CARGO_HOME: C:\Users\runneradmin\.cargo
+2026-03-17T13:06:00.0776526Z   CARGO_INCREMENTAL: 0
+2026-03-17T13:06:00.0776832Z   CARGO_TERM_COLOR: always
+2026-03-17T13:06:00.0777158Z ##[endgroup]
+2026-03-17T13:06:05.3383263Z         Info Looking up installed tauri packages to check mismatched versions...
+2026-03-17T13:06:06.8387149Z You must change the bundle identifier in `{bundle_identifier_source} identifier`. The default value `com.tauri.dev` is not allowed as it must be unique across applications.
+2026-03-17T13:06:06.8401396Z        Error You must change the bundle identifier in `{bundle_identifier_source} identifier`. The default value `com.tauri.dev` is not allowed as it must be unique across applications.
+2026-03-17T13:06:06.9715690Z ##[error]Process completed with exit code 1.
+2026-03-17T13:06:07.0048947Z Post job cleanup.
+2026-03-17T13:06:07.7036730Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-03-17T13:06:07.7627784Z git version 2.53.0.windows.1
+2026-03-17T13:06:07.7923852Z Temporarily overriding HOME='D:\a\_temp\6ca09519-da1c-4a48-abac-2bf0465b062e' before making global git config changes
+2026-03-17T13:06:07.8009089Z Adding repository directory to the temporary git global config as a safe directory
+2026-03-17T13:06:07.8032059Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\EA_DASHBOARD_WEB\EA_DASHBOARD_WEB
+2026-03-17T13:06:07.8463155Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-03-17T13:06:07.9028475Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-03-17T13:06:09.0949509Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-03-17T13:06:09.1355375Z http.https://github.com/.extraheader
+2026-03-17T13:06:09.1550180Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all http.https://github.com/.extraheader
+2026-03-17T13:06:09.2038462Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-03-17T13:06:10.4147374Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-03-17T13:06:10.4605123Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-03-17T13:06:11.3595492Z Cleaning up orphan processes
+2026-03-17T13:06:11.4486202Z ##[warning]Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-node@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

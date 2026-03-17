@@ -1,0 +1,13 @@
+﻿2026-03-17T13:09:20.0402130Z ##[group]Run tauri build
+2026-03-17T13:09:20.0402572Z [36;1mtauri build[0m
+2026-03-17T13:09:20.0512551Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-03-17T13:09:20.0513182Z env:
+2026-03-17T13:09:20.0513478Z   CARGO_HOME: C:\Users\runneradmin\.cargo
+2026-03-17T13:09:20.0513893Z   CARGO_INCREMENTAL: 0
+2026-03-17T13:09:20.0514215Z   CARGO_TERM_COLOR: always
+2026-03-17T13:09:20.0514538Z ##[endgroup]
+2026-03-17T13:09:22.6548548Z         Info Looking up installed tauri packages to check mismatched versions...
+2026-03-17T13:09:23.6932564Z         Warn The bundle identifier "com.eadashboard.app" set in `"tauri.conf.json" identifier` ends with `.app`. This is not recommended because it conflicts with the application bundle extension on macOS.
+2026-03-17T13:09:23.7699900Z The configured frontendDist includes the `["src-tauri\\target", "src-tauri"]` folders. Please isolate your web assets on a separate folder and update `tauri.conf.json > build > frontendDist`.
+2026-03-17T13:09:23.7702882Z        Error The configured frontendDist includes the `["src-tauri\\target", "src-tauri"]` folders. Please isolate your web assets on a separate folder and update `tauri.conf.json > build > frontendDist`.
+2026-03-17T13:09:23.8373303Z ##[error]Process completed with exit code 1.

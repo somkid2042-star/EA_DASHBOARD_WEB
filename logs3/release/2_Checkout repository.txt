@@ -1,0 +1,59 @@
+﻿2026-03-17T13:08:32.7797516Z ##[group]Run actions/checkout@v4
+2026-03-17T13:08:32.7798843Z with:
+2026-03-17T13:08:32.7799600Z   repository: somkid2042-star/EA_DASHBOARD_WEB
+2026-03-17T13:08:32.7800798Z   token: ***
+2026-03-17T13:08:32.7801456Z   ssh-strict: true
+2026-03-17T13:08:32.7802139Z   ssh-user: git
+2026-03-17T13:08:32.7802838Z   persist-credentials: true
+2026-03-17T13:08:32.7803609Z   clean: true
+2026-03-17T13:08:32.7804311Z   sparse-checkout-cone-mode: true
+2026-03-17T13:08:32.7805163Z   fetch-depth: 1
+2026-03-17T13:08:32.7805838Z   fetch-tags: false
+2026-03-17T13:08:32.7807230Z   show-progress: true
+2026-03-17T13:08:32.7808182Z   lfs: false
+2026-03-17T13:08:32.7808870Z   submodules: false
+2026-03-17T13:08:32.7809588Z   set-safe-directory: true
+2026-03-17T13:08:32.7810662Z ##[endgroup]
+2026-03-17T13:08:33.3986664Z Syncing repository: somkid2042-star/EA_DASHBOARD_WEB
+2026-03-17T13:08:33.3988736Z ##[group]Getting Git version info
+2026-03-17T13:08:33.3990040Z Working directory is 'D:\a\EA_DASHBOARD_WEB\EA_DASHBOARD_WEB'
+2026-03-17T13:08:33.3991807Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-03-17T13:08:34.4009059Z git version 2.53.0.windows.1
+2026-03-17T13:08:34.4010839Z ##[endgroup]
+2026-03-17T13:08:34.4016393Z Temporarily overriding HOME='D:\a\_temp\a94aa341-c766-4cf3-ab89-11df8bf54171' before making global git config changes
+2026-03-17T13:08:34.4017670Z Adding repository directory to the temporary git global config as a safe directory
+2026-03-17T13:08:34.4019254Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\EA_DASHBOARD_WEB\EA_DASHBOARD_WEB
+2026-03-17T13:08:34.4020929Z Deleting the contents of 'D:\a\EA_DASHBOARD_WEB\EA_DASHBOARD_WEB'
+2026-03-17T13:08:34.4025518Z ##[group]Initializing the repository
+2026-03-17T13:08:34.4026262Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\EA_DASHBOARD_WEB\EA_DASHBOARD_WEB
+2026-03-17T13:08:34.4027251Z Initialized empty Git repository in D:/a/EA_DASHBOARD_WEB/EA_DASHBOARD_WEB/.git/
+2026-03-17T13:08:34.4028922Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/somkid2042-star/EA_DASHBOARD_WEB
+2026-03-17T13:08:34.4030474Z ##[endgroup]
+2026-03-17T13:08:34.4031063Z ##[group]Disabling automatic garbage collection
+2026-03-17T13:08:34.4031699Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+2026-03-17T13:08:34.4032879Z ##[endgroup]
+2026-03-17T13:08:34.4034303Z ##[group]Setting up auth
+2026-03-17T13:08:34.4035135Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-03-17T13:08:34.4038918Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-03-17T13:08:35.6829152Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-03-17T13:08:35.7141289Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-03-17T13:08:36.2735037Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-03-17T13:08:36.3045278Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-03-17T13:08:36.8689523Z [command]"C:\Program Files\Git\bin\git.exe" config --local http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+2026-03-17T13:08:36.9039244Z ##[endgroup]
+2026-03-17T13:08:36.9040261Z ##[group]Fetching the repository
+2026-03-17T13:08:36.9055154Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +7bf9b510893ce10e04b7b570c3624c3d18ecd2c7:refs/remotes/origin/main
+2026-03-17T13:08:38.0038024Z From https://github.com/somkid2042-star/EA_DASHBOARD_WEB
+2026-03-17T13:08:38.0039202Z  * [new ref]         7bf9b510893ce10e04b7b570c3624c3d18ecd2c7 -> origin/main
+2026-03-17T13:08:38.0525859Z ##[endgroup]
+2026-03-17T13:08:38.0526890Z ##[group]Determining the checkout info
+2026-03-17T13:08:38.0529271Z ##[endgroup]
+2026-03-17T13:08:38.0574226Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+2026-03-17T13:08:38.1852921Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+2026-03-17T13:08:38.2270356Z ##[group]Checking out the ref
+2026-03-17T13:08:38.2271831Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force -B main refs/remotes/origin/main
+2026-03-17T13:08:38.2986736Z Switched to a new branch 'main'
+2026-03-17T13:08:38.3012770Z branch 'main' set up to track 'origin/main'.
+2026-03-17T13:08:38.3069466Z ##[endgroup]
+2026-03-17T13:08:38.3540792Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+2026-03-17T13:08:38.3843088Z 7bf9b510893ce10e04b7b570c3624c3d18ecd2c7
