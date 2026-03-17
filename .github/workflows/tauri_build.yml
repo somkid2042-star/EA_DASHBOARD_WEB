@@ -46,8 +46,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "v1.1.1"
-          name: "EA Smart Dashboard v1.1.1 (Tauri)"
+          tag_name: "v1.1.2"
+          name: "EA Smart Dashboard v1.1.2 (Crash Fix)"
           body: |
             🚀 **EA Smart Dashboard — Tauri Edition**
             
