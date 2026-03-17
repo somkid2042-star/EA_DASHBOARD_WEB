@@ -1045,10 +1045,10 @@ void SyncToWebApp()
    
    int res = WebRequest("POST", LOCAL_API_URL, headers, 5000, post, result, resHeaders);
    
-   // We ignore output to avoid spamming the log unless it's a critical error > 500
-   if (res > 0 && res != 200 && res != 201) {
-      Print("Local API Sync Err: ", res);
-   }
+   // We ignore output to avoid spamming the MT5 log, even on errors like 1001
+   // if (res > 0 && res != 200 && res != 201) {
+   //    Print("Local API Sync Err: ", res);
+   // }
 }
 
 //+------------------------------------------------------------------+
