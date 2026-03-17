@@ -19,18 +19,18 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Build Rust Server
-        working-directory: ./SimpleDashboard/ea-server
+        working-directory: ./X-Dashbord/ea-server
         run: cargo build --release
 
       - name: Rename Binary
-        working-directory: ./SimpleDashboard/ea-server
+        working-directory: ./X-Dashbord/ea-server
         run: Rename-Item -Path "target\release\ea-server.exe" -NewName "EA_Smart_Server_v1.3.0.exe"
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: EA_Smart_Server_Windows
-          path: SimpleDashboard/ea-server/target/release/EA_Smart_Server_v1.3.0.exe
+          path: X-Dashbord/ea-server/target/release/EA_Smart_Server_v1.3.0.exe
           
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -47,7 +47,7 @@ jobs:
             
             **Downloads:**
             - `EA_Smart_Server_v1.3.0.exe` — Standalone Executable (No installation required)
-          files: SimpleDashboard/ea-server/target/release/EA_Smart_Server_v1.3.0.exe
+          files: X-Dashbord/ea-server/target/release/EA_Smart_Server_v1.3.0.exe
           make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

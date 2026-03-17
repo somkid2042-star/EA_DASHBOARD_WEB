@@ -1,8 +1,8 @@
 //+------------------------------------------------------------------+
-//|                                              SmartGrid_Pro.mq5   |
+//|                                                 X_Dashbord.mq5   |
 //|               Smart EA Grid with Dynamic ATR Step & USD Target   |
 //+------------------------------------------------------------------+
-#property copyright "SmartGrid Pro v1.0"
+#property copyright "X_Dashbord v1.0"
 #property version   "1.00"
 #property description "Smart Grid with ATR Dynamic Step, Trend Filter, and USD Basket Management"
 
@@ -188,7 +188,7 @@ bool     InpShowDashboard = true;
 //+------------------------------------------------------------------+
 int OnInit()
 {
-   Print("=== SmartGrid Pro v1.0 เริ่มทำงาน ===");
+   Print("=== X_Dashbord v1.0 เริ่มทำงาน ===");
    
    g_trade.SetExpertMagicNumber(InpMagicNumber);
    g_trade.SetDeviationInPoints(30);
