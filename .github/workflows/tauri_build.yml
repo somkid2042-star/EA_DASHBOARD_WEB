@@ -1,0 +1,45 @@
+name: Release Tauri App
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Tauri CLI
+        run: npm install -g @tauri-apps/cli@latest
+
+      - name: Build Tauri App
+        working-directory: ./SimpleDashboard
+        run: tauri build
+
+      - name: Upload Windows EXE artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: EA_Dashboard_Windows.exe
+          path: SimpleDashboard/src-tauri/target/release/ea-dashboard-web.exe
+          
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: "v1.1.0-tauri"
+          name: "EA Smart Dashboard (Tauri Lightweight)"
+          body: "New ultra-lightweight Windows desktop app built with Tauri. File size under 10MB."
+          files: SimpleDashboard/src-tauri/target/release/ea-dashboard-web.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

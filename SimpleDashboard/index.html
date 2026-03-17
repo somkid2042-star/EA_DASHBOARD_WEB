@@ -1247,7 +1247,7 @@
             const listEl = document.getElementById('account-list');
             if (!listEl) return;
             try {
-                const res = await fetch('/api/accounts');
+                const res = await fetch('http://localhost:3000/api/accounts');
                 if (!res.ok) throw new Error('Server: ' + res.status);
                 const instances = await res.json();
 
@@ -1448,7 +1448,7 @@
         let firstLoad = true;
         async function fetchData() {
             try {
-                const res = await fetch('/api/ea-stats?account_id=' + encodeURIComponent(currentAccountId) + '&symbol=' + encodeURIComponent(currentSymbol));
+                const res = await fetch('http://localhost:3000/api/ea-stats?account_id=' + encodeURIComponent(currentAccountId) + '&symbol=' + encodeURIComponent(currentSymbol));
                 const data = await res.json();
 
                 // Populate settings on first load or strategy change
@@ -1802,7 +1802,7 @@
             }
 
             try {
-                await fetch('/api/close-order', {
+                await fetch('http://localhost:3000/api/close-order', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ ticket: ticket, account_id: currentAccountId, symbol: currentSymbol })
@@ -1817,7 +1817,7 @@
         async function closeAllOrders() {
             if (!confirm('ยืนยันปิดออเดอร์ทั้งหมด?')) return;
             try {
-                await fetch('/api/close-order', {
+                await fetch('http://localhost:3000/api/close-order', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'close_all', account_id: currentAccountId, symbol: currentSymbol })
@@ -1831,7 +1831,7 @@
         async function closeProfitableOrders() {
             if (!confirm('ยืนยันปิดเฉพาะออเดอร์ที่ได้กำไร?')) return;
             try {
-                await fetch('/api/close-order', {
+                await fetch('http://localhost:3000/api/close-order', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'close_profitable', account_id: currentAccountId, symbol: currentSymbol })
@@ -1844,7 +1844,7 @@
         async function hedgeNow() {
             if (!confirm('ยืนยัน Hedge ทันที? ระบบจะเปิดออเดอร์ตรงข้ามเพื่อล็อคขาดทุน')) return;
             try {
-                await fetch('/api/close-order', {
+                await fetch('http://localhost:3000/api/close-order', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'hedge_now', account_id: currentAccountId, symbol: currentSymbol })
@@ -1857,7 +1857,7 @@
         async function closeHedge() {
             if (!confirm('ยืนยันปลด Hedge? ระบบจะกลับไปทำงานปกติ')) return;
             try {
-                await fetch('/api/close-order', {
+                await fetch('http://localhost:3000/api/close-order', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'close_hedge', account_id: currentAccountId, symbol: currentSymbol })
@@ -1877,7 +1877,7 @@
             }
 
             try {
-                await fetch('/api/open-multiplier', {
+                await fetch('http://localhost:3000/api/open-multiplier', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ ticket: ticket, account_id: currentAccountId, symbol: currentSymbol })
@@ -2137,7 +2137,7 @@
             }
 
             try {
-                await fetch('/api/update-settings', {
+                await fetch('http://localhost:3000/api/update-settings', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ settings: settingsPayload, account_id: currentAccountId, symbol: currentSymbol, strategy: currentStrategy })
@@ -2436,7 +2436,7 @@
                 swRegistration = await navigator.serviceWorker.ready;
 
                 msg.innerText = "[3/4] กำลังขอรหัส VAPID จาก Server...";
-                const response = await fetch('/api/vapid-public-key');
+                const response = await fetch('http://localhost:3000/api/vapid-public-key');
                 if (!response.ok) throw new Error("ดึง VAPID Key ไม่สำเร็จ");
                 const vapidPublicKey = await response.text();
                 const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
@@ -2448,7 +2448,7 @@
                 });
 
                 msg.innerText = "กำลังบันทึกข้อมูลเข้าระบบ...";
-                const subResponse = await fetch('/api/subscribe', {
+                const subResponse = await fetch('http://localhost:3000/api/subscribe', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(subscription)
@@ -2481,7 +2481,7 @@
             btn.disabled = true;
             btn.innerHTML = `${flaskIcon} กำลังส่ง...`;
             try {
-                const res = await fetch('/api/test-push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+                const res = await fetch('http://localhost:3000/api/test-push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
                 if (res.ok) {
                     msg.innerHTML = `${checkIcon} ส่งทดสอบแล้ว! รอสักครู่...`;
                     msg.style.color = "var(--success)";
