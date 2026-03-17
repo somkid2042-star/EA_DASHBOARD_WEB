@@ -1,0 +1,30 @@
+﻿2026-03-17T12:59:22.4980581Z Current runner version: '2.332.0'
+2026-03-17T12:59:22.5042380Z ##[group]Runner Image Provisioner
+2026-03-17T12:59:22.5043537Z Hosted Compute Agent
+2026-03-17T12:59:22.5044475Z Version: 20260213.493
+2026-03-17T12:59:22.5045368Z Commit: 5c115507f6dd24b8de37d8bbe0bb4509d0cc0fa3
+2026-03-17T12:59:22.5046418Z Build Date: 2026-02-13T00:28:41Z
+2026-03-17T12:59:22.5047448Z Worker ID: {904a7ca4-71df-4929-9f01-75d0b3c1a982}
+2026-03-17T12:59:22.5048810Z Azure Region: eastus2
+2026-03-17T12:59:22.5049606Z ##[endgroup]
+2026-03-17T12:59:22.5051623Z ##[group]Operating System
+2026-03-17T12:59:22.5052550Z Microsoft Windows Server 2025
+2026-03-17T12:59:22.5053334Z 10.0.26100
+2026-03-17T12:59:22.5054016Z Datacenter
+2026-03-17T12:59:22.5054642Z ##[endgroup]
+2026-03-17T12:59:22.5055339Z ##[group]Runner Image
+2026-03-17T12:59:22.5056130Z Image: windows-2025
+2026-03-17T12:59:22.5056824Z Version: 20260302.43.1
+2026-03-17T12:59:22.5058486Z Included Software: https://github.com/actions/runner-images/blob/win25/20260302.43/images/windows/Windows2025-Readme.md
+2026-03-17T12:59:22.5061610Z Image Release: https://github.com/actions/runner-images/releases/tag/win25%2F20260302.43
+2026-03-17T12:59:22.5063086Z ##[endgroup]
+2026-03-17T12:59:22.5064908Z ##[group]GITHUB_TOKEN Permissions
+2026-03-17T12:59:22.5067440Z Contents: read
+2026-03-17T12:59:22.5068273Z Metadata: read
+2026-03-17T12:59:22.5069427Z Packages: read
+2026-03-17T12:59:22.5070151Z ##[endgroup]
+2026-03-17T12:59:22.5072913Z Secret source: Actions
+2026-03-17T12:59:22.5074040Z Prepare workflow directory
+2026-03-17T12:59:22.5619340Z Prepare all required actions
+2026-03-17T12:59:22.5676246Z Getting action download info
+2026-03-17T12:59:22.9010979Z ##[error]This request has been automatically failed because it uses a deprecated version of `actions/upload-artifact: v3`. Learn more: https://github.blog/changelog/2024-04-16-deprecation-notice-v3-of-the-artifact-actions/

@@ -8,13 +8,15 @@ on:
 jobs:
   release:
     runs-on: windows-latest
-    
+    permissions:
+      contents: write
+      
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 18
 
@@ -29,16 +31,16 @@ jobs:
         run: tauri build
 
       - name: Upload Windows EXE artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: EA_Dashboard_Windows.exe
           path: SimpleDashboard/src-tauri/target/release/ea-dashboard-web.exe
           
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: "v1.1.0-tauri"
-          name: "EA Smart Dashboard (Tauri Lightweight)"
+          tag_name: "v1.1.0-tauri-${{ github.sha }}"
+          name: "EA Smart Dashboard (Tauri Lightweight) - Build ${{ github.run_number }}"
           body: "New ultra-lightweight Windows desktop app built with Tauri. File size under 10MB."
           files: SimpleDashboard/src-tauri/target/release/ea-dashboard-web.exe
         env:
