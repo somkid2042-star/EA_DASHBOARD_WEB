@@ -24,19 +24,19 @@ jobs:
 
       - name: Rename Binary
         working-directory: ./SimpleDashboard/ea-server
-        run: Rename-Item -Path "target\release\ea-server.exe" -NewName "EA_Smart_Server_v1.2.1.exe"
+        run: Rename-Item -Path "target\release\ea-server.exe" -NewName "EA_Smart_Server_v1.2.2.exe"
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: EA_Smart_Server_Windows
-          path: SimpleDashboard/ea-server/target/release/EA_Smart_Server_v1.2.1.exe
+          path: SimpleDashboard/ea-server/target/release/EA_Smart_Server_v1.2.2.exe
           
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "v1.2.1"
-          name: "EA Smart Server v1.2.1 (Crash Fixes & Logs)"
+          tag_name: "v1.2.2"
+          name: "EA Smart Server v1.2.2 (VPS Terminal Fallback)"
           body: |
             🚀 **EA Smart Server — Native Edition**
             

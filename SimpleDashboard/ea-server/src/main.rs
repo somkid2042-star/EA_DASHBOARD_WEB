@@ -419,6 +419,8 @@ fn main() {
         ..Default::default()
     };
 
+    let app_state_for_fallback = app_state.clone();
+    
     let result = eframe::run_native(
         "EA Smart Server",
         options,
@@ -433,18 +435,29 @@ fn main() {
         }),
     );
 
-    // 2. If GUI fails to launch (e.g. VPS with no GPU drivers), log it and wait to prevent instant close
+    // 2. Headless VPS Fallback: If GUI fails (OpenGL error), switch to CLI mode
     if let Err(e) = result {
-        let error_msg = format!(
-            "Failed to start GUI Windows: {:?}\n\nThis often happens on VPS / Windows Servers without graphics drivers.\nPlease check SERVER_CRASH_LOG.txt or contact support.", 
-            e
-        );
-        let _ = std::fs::write("GUI_ERROR_LOG.txt", &error_msg);
-        println!("{}", error_msg);
-        
-        // Pause console so user can read the error before it disappears
-        println!("\nPress ENTER to exit...");
-        let mut input = String::new();
-        let _ = std::io::stdin().read_line(&mut input);
+        println!("\n=======================================================");
+        println!("⚠️ GUI FAILED TO START: Graphics driver missing. (OpenGL Error)");
+        println!("Error details: {}", e);
+        println!("=======================================================");
+        println!("✅ FALLBACK: Running in Headless Terminal Mode.");
+        println!("The web server is fully functional in the background.");
+        println!("Access the dashboard via browser at: http://localhost:{}", port);
+        println!("Press Ctrl+C to shut down the server.");
+        println!("=======================================================\n");
+
+        let mut printed_logs = 0;
+        loop {
+            if let Ok(logs) = app_state_for_fallback.logs.lock() {
+                if logs.len() > printed_logs {
+                    for i in printed_logs..logs.len() {
+                        println!(">> {}", logs[i]);
+                    }
+                    printed_logs = logs.len();
+                }
+            }
+            std::thread::sleep(std::time::Duration::from_millis(500));
+        }
     }
 }
