@@ -1,4 +1,4 @@
-name: Release Tauri App
+name: Release EA Server
 
 on:
   push:
@@ -15,52 +15,39 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Install Tauri CLI
-        run: npm install -g @tauri-apps/cli@latest
+      - name: Build Rust Server
+        working-directory: ./SimpleDashboard/ea-server
+        run: cargo build --release
 
-      - name: Build Tauri App
-        working-directory: ./SimpleDashboard
-        run: tauri build
-
-      - name: List build output
-        run: |
-          Get-ChildItem -Recurse SimpleDashboard/src-tauri/target/release/bundle/ -Filter *.exe
-          Get-ChildItem -Recurse SimpleDashboard/src-tauri/target/release/bundle/ -Filter *.msi
+      - name: Rename Binary
+        working-directory: ./SimpleDashboard/ea-server
+        run: Rename-Item -Path "target\release\ea-server.exe" -NewName "EA_Smart_Server_v1.2.0.exe"
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: EA_Dashboard_Windows
-          path: |
-            SimpleDashboard/src-tauri/target/release/bundle/nsis/*.exe
-            SimpleDashboard/src-tauri/target/release/bundle/msi/*.msi
+          name: EA_Smart_Server_Windows
+          path: SimpleDashboard/ea-server/target/release/EA_Smart_Server_v1.2.0.exe
           
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "v1.1.2"
-          name: "EA Smart Dashboard v1.1.2 (Crash Fix)"
+          tag_name: "v1.2.0"
+          name: "EA Smart Server v1.2.0 (Native Control Panel)"
           body: |
-            🚀 **EA Smart Dashboard — Tauri Edition**
+            🚀 **EA Smart Server — Native Edition**
             
-            Ultra-lightweight Windows desktop app (~3MB).
-            Built with Rust backend for maximum performance.
-            Includes WebView2 auto-installer.
+            Ultra-lightweight Windows desktop server app.
+            - Displays a native GUI Control Panel (Status, MT5 Connections, Logs)
+            - Embeds the full Web Dashboard (accessible via mobile at port 3000)
+            - Replaces the old Node.js and Tauri versions with a single standalone `.exe` file.
             
             **Downloads:**
-            - `ea-dashboard-web_1.1.1_x64-setup.exe` — Windows Installer (recommended)
-            - `ea-dashboard-web_1.1.1_x64_en-US.msi` — MSI Installer
-          files: |
-            SimpleDashboard/src-tauri/target/release/bundle/nsis/*.exe
-            SimpleDashboard/src-tauri/target/release/bundle/msi/*.msi
+            - `EA_Smart_Server_v1.2.0.exe` — Standalone Executable (No installation required)
+          files: SimpleDashboard/ea-server/target/release/EA_Smart_Server_v1.2.0.exe
           make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
