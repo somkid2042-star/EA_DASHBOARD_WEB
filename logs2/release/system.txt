@@ -1,8 +1,0 @@
-2026-03-17T13:05:03.7700000Z Requested labels: windows-latest
-2026-03-17T13:05:03.7700000Z Job defined at: somkid2042-star/EA_DASHBOARD_WEB/.github/workflows/tauri_build.yml@refs/heads/main
-2026-03-17T13:05:03.7700000Z Waiting for a runner to pick up this job...
-2026-03-17T13:05:03.7650000Z Evaluating release.if
-2026-03-17T13:05:03.7650000Z Evaluating: success()
-2026-03-17T13:05:03.7650000Z Result: true
-2026-03-17T13:05:04.1810000Z Job is waiting for a hosted runner to come online.
-2026-03-17T13:05:04.1810000Z Job is about to start running on the hosted runner: GitHub Actions 1000000001
