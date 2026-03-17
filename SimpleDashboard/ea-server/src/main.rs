@@ -11,7 +11,12 @@ use std::sync::{Arc, Mutex};
 use tower_http::cors::{Any, CorsLayer};
 use rust_embed::RustEmbed;
 use mime_guess::from_path;
-use eframe::egui;
+
+use fltk::{
+    app, button::Button, enums::{Color, Font, FrameType, Align},
+    frame::Frame, group::{Group, Pack, Scroll}, prelude::*, window::DoubleWindow,
+    text::{TextDisplay, TextBuffer},
+};
 
 // Embed the entire www/ folder content into the .exe
 #[derive(RustEmbed)]
@@ -28,9 +33,10 @@ pub struct AppState {
 impl AppState {
     pub fn log(&self, msg: String) {
         if let Ok(mut logs) = self.logs.lock() {
-            logs.push(format!("[{}] {}", chrono::Local::now().format("%H:%M:%S"), msg));
-            // Keep last 50 logs
-            if logs.len() > 50 {
+            let log_entry = format!("[{}] {}", chrono::Local::now().format("%H:%M:%S"), msg);
+            logs.push(log_entry);
+            // Keep last 100 logs
+            if logs.len() > 100 {
                 logs.remove(0);
             }
         }
@@ -138,6 +144,9 @@ async fn post_stats(
     let mut cmds_map = state.instance_commands.lock().unwrap();
     let commands = cmds_map.remove(&inst_key).unwrap_or_default();
 
+    // Wake the FLTK GUI thread so it redraws immediately
+    app::awake();
+
     Json(json!({ "success": true, "commands": commands }))
 }
 
@@ -157,6 +166,7 @@ async fn post_close_order(State(state): State<Arc<AppState>>, Json(payload): Jso
     } else if let Some(ticket) = payload.get("ticket").and_then(|v| v.as_f64()) {
         entry.push(json!({ "action": "close", "ticket": ticket }));
     }
+    app::awake();
     Json(json!({ "success": true }))
 }
 
@@ -169,6 +179,7 @@ async fn post_open_multiplier(State(state): State<Arc<AppState>>, Json(payload):
         state.instance_commands.lock().unwrap().entry(inst_key).or_default()
             .push(json!({ "action": "open_multiplier", "ticket": ticket }));
     }
+    app::awake();
     Json(json!({ "success": true }))
 }
 
@@ -197,6 +208,7 @@ async fn post_update_settings(State(state): State<Arc<AppState>>, Json(payload):
                 .send().await;
         });
     }
+    app::awake();
     Json(json!({ "success": true }))
 }
 
@@ -214,6 +226,7 @@ async fn preload_settings(preloaded_state: Arc<Mutex<HashMap<String, Value>>>, l
                     }
                     if let Ok(mut l) = logs.lock() {
                         l.push(format!("[{}] ✅ Supabase: Loaded {} settings", chrono::Local::now().format("%H:%M:%S"), map.len()));
+                        app::awake(); // Wake GUI to show new log
                     }
                 }
             }
@@ -221,143 +234,27 @@ async fn preload_settings(preloaded_state: Arc<Mutex<HashMap<String, Value>>>, l
         Err(_) => {
             if let Ok(mut l) = logs.lock() {
                 l.push(format!("[{}] ⚠️ Supabase: Connection failed", chrono::Local::now().format("%H:%M:%S")));
+                app::awake();
             }
         }
     }
 }
 
-// ---------------- EGUI APPLICATION ----------------
-
-struct ServerApp {
-    state: Arc<AppState>,
-    port: u16,
-    local_ip: String,
-    port_status: String,
-}
-
-impl eframe::App for ServerApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        // Refresh 2 times per second
-        ctx.request_repaint_after(std::time::Duration::from_millis(500));
-
-        egui::CentralPanel::default().show(ctx, |ui| {
-            ui.heading("EA Smart Server Panel");
-            ui.add_space(10.0);
-
-            ui.group(|ui| {
-                ui.label(egui::RichText::new("🌐 Server Status").strong().size(16.0));
-                ui.add_space(5.0);
-                
-                ui.horizontal(|ui| {
-                    ui.label("Status:");
-                    if self.port_status == "OK" {
-                        ui.label(egui::RichText::new("● Running").color(egui::Color32::GREEN));
-                    } else {
-                        ui.label(egui::RichText::new(format!("● Error: {}", self.port_status)).color(egui::Color32::RED));
-                    }
-                });
-
-                ui.label(format!("Port: {}", self.port));
-                ui.horizontal(|ui| {
-                    ui.label("Local URL:");
-                    ui.hyperlink(format!("http://localhost:{}", self.port));
-                });
-                ui.horizontal(|ui| {
-                    ui.label("LAN URL:");
-                    ui.hyperlink(format!("http://{}:{}", self.local_ip, self.port));
-                    ui.label(egui::RichText::new("(Open this on your mobile)").weak());
-                });
-            });
-
-            ui.add_space(20.0);
-            
-            ui.label(egui::RichText::new("📊 Connected MT5 Instances").strong().size(16.0));
-            ui.add_space(5.0);
-
-            // Fetch data securely and synchronously
-            let data_map = if let Ok(lock) = self.state.instance_data.lock() {
-                lock.clone()
-            } else {
-                HashMap::new()
-            };
-            
-            if data_map.is_empty() {
-                ui.label(egui::RichText::new("No MT5 EAs currently connected.").italics().weak());
-            } else {
-                egui::ScrollArea::vertical().max_height(150.0).show(ui, |ui| {
-                    egui::Grid::new("my_grid")
-                        .num_columns(5)
-                        .spacing([20.0, 8.0])
-                        .striped(true)
-                        .show(ui, |ui| {
-                            ui.label(egui::RichText::new("Account").strong());
-                            ui.label(egui::RichText::new("Symbol").strong());
-                            ui.label(egui::RichText::new("Equity").strong());
-                            ui.label(egui::RichText::new("Profit").strong());
-                            ui.label(egui::RichText::new("Orders").strong());
-                            ui.end_row();
-
-                            for (key, val) in data_map.iter() {
-                                let parts: Vec<&str> = key.split(':').collect();
-                                let acc = parts.get(0).unwrap_or(&"");
-                                let sym = parts.get(1).unwrap_or(&"");
-                                
-                                let equity = val.get("equity").and_then(|v| v.as_f64()).unwrap_or(0.0);
-                                let profit = val.get("total_profit").and_then(|v| v.as_f64()).unwrap_or(0.0);
-                                let orders = val.get("open_orders").and_then(|v| v.as_i64()).unwrap_or(0);
-
-                                ui.label(*acc);
-                                ui.label(*sym);
-                                ui.label(format!("${:.2}", equity));
-                                
-                                let profit_text = format!("${:.2}", profit);
-                                if profit > 0.0 {
-                                    ui.label(egui::RichText::new(profit_text).color(egui::Color32::from_rgb(0, 200, 0)));
-                                } else if profit < 0.0 {
-                                    ui.label(egui::RichText::new(profit_text).color(egui::Color32::from_rgb(200, 0, 0)));
-                                } else {
-                                    ui.label(profit_text);
-                                }
-                                
-                                ui.label(orders.to_string());
-                                ui.end_row();
-                            }
-                        });
-                });
-            }
-
-            ui.add_space(20.0);
-
-            ui.label(egui::RichText::new("📝 Activity Logs").strong().size(16.0));
-            ui.add_space(5.0);
-            
-            let logs_copy = if let Ok(lock) = self.state.logs.lock() {
-                lock.clone()
-            } else {
-                vec![]
-            };
-
-            egui::ScrollArea::vertical().stick_to_bottom(true).show(ui, |ui| {
-                ui.style_mut().visuals.extreme_bg_color = egui::Color32::from_rgb(20, 20, 20); 
-                ui.add_sized(ui.available_size(), egui::TextEdit::multiline(&mut logs_copy.join("\n")).interactive(false).font(egui::TextStyle::Monospace));
-            });
-        });
-    }
-}
-
-fn get_local_ip() -> String {
-    "127.0.0.1 (Connect via LAN IP)".to_string()
-}
+// ---------------- FLTK APPLICATION ----------------
+const DARK_BG: Color = Color::from_hex(0x1e1e1e);
+const PANEL_BG: Color = Color::from_hex(0x2d2d2d);
+const TEXT_COLOR: Color = Color::from_hex(0xe0e0e0);
+const ACCENT: Color = Color::from_hex(0x00a86b); // Neon Green
 
 fn main() {
-    // 1. Setup panic hook to log crashes to text file for debugging
+    // Setup panic hook to log crashes to text file for debugging
     std::panic::set_hook(Box::new(|info| {
         let msg = format!("CRITICAL PANIC OCCURRED:\n{:?}", info);
         let _ = std::fs::write("SERVER_CRASH_LOG.txt", &msg);
         eprintln!("{}", msg);
     }));
 
-    let rt = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime");
+    let app = app::App::default().with_scheme(app::Scheme::Gtk);
 
     let app_state = Arc::new(AppState {
         instance_data: Arc::new(Mutex::new(HashMap::new())),
@@ -367,17 +264,19 @@ fn main() {
     });
 
     let port = 3000u16;
-    let local_ip = get_local_ip();
 
     app_state.log("Starting Web Server...".to_string());
 
+    let rt = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime");
     let server_state = app_state.clone();
+    
+    let app_state_tokio = app_state.clone();
     
     // Check if port is available before starting Axum
     let port_status = match std::net::TcpListener::bind(format!("0.0.0.0:{}", port)) {
         Ok(std_listener) => {
-            drop(std_listener); // Let tokio bind it now
-            // Port is free, start Axum server
+            drop(std_listener); // Let tokio bind
+            
             rt.spawn(async move {
                 let preload_state = server_state.preloaded_settings.clone();
                 let logs_state = server_state.logs.clone();
@@ -396,68 +295,138 @@ fn main() {
 
                 let addr = format!("0.0.0.0:{}", port);
                 let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
+                app_state_tokio.log(format!("Server listening on port {}", port));
+                // Important to call this to wake UI
+                app::awake();
+                
                 axum::serve(listener, router).await.unwrap();
             });
             "OK".to_string()
         },
-        Err(e) => {
+        Err(_) => {
             let err_msg = format!("Port {} is IN USE by another program!", port);
             app_state.log(err_msg.clone());
             err_msg
         }
     };
 
+    // ---------------- UI Setup ----------------
+    let mut win = DoubleWindow::default().with_size(650, 550).center_screen().with_label("EA Smart Server (Native)");
+    win.set_color(DARK_BG);
+
+    let mut pack = Pack::default().with_size(610, 510).center_of_parent();
+    pack.set_spacing(15);
+
+    // Title
+    let mut title = Frame::default().with_size(610, 40).with_label("EA Smart Dashboard Control Panel");
+    title.set_label_font(Font::HelveticaBold);
+    title.set_label_size(24);
+    title.set_label_color(TEXT_COLOR);
+
+    // Server Status Panel
+    let mut status_group = Group::default().with_size(610, 100);
+    status_group.set_frame(FrameType::FlatBox);
+    status_group.set_color(PANEL_BG);
+    
+    let mut l1 = Frame::default().with_size(580, 25).with_pos(status_group.x() + 15, status_group.y() + 10).with_label("🌐 Server Status:");
+    l1.set_label_font(Font::HelveticaBold);
+    l1.set_label_size(16);
+    l1.set_label_color(TEXT_COLOR);
+    l1.set_align(Align::Left | Align::Inside);
+
+    let mut l_status = Frame::default().with_size(580, 25).with_pos(status_group.x() + 15, status_group.y() + 35);
+    l_status.set_label_size(14);
+    l_status.set_align(Align::Left | Align::Inside);
     if port_status == "OK" {
-        app_state.log(format!("Server listening on port {}", port));
+        l_status.set_label(&format!("● Running | Port: {}", port));
+        l_status.set_label_color(ACCENT);
+    } else {
+        l_status.set_label(&format!("● Error: {}", port_status));
+        l_status.set_label_color(Color::Red);
     }
 
-    let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default()
-            .with_inner_size([600.0, 500.0])
-            .with_min_inner_size([400.0, 300.0])
-            .with_title("EA Smart Dashboard Control Panel"),
-        ..Default::default()
-    };
+    let mut l_local = Frame::default().with_size(580, 25).with_pos(status_group.x() + 15, status_group.y() + 60);
+    l_local.set_label(&format!("URL: http://localhost:{}  (Enter this IP in your mobile browser)", port));
+    l_local.set_label_size(14);
+    l_local.set_label_color(TEXT_COLOR);
+    l_local.set_align(Align::Left | Align::Inside);
 
-    let app_state_for_fallback = app_state.clone();
+    status_group.end();
+
+    // MT5 Connections Area
+    let mut mt5_title = Frame::default().with_size(610, 25).with_label("📊 Connected MT5 Instances");
+    mt5_title.set_label_font(Font::HelveticaBold);
+    mt5_title.set_label_size(16);
+    mt5_title.set_label_color(TEXT_COLOR);
+    mt5_title.set_align(Align::Left | Align::Inside);
+
+    // We use TextDisplay to show lists
+    let mut mt5_buf = TextBuffer::default();
+    let mut mt5_list = TextDisplay::default().with_size(610, 150);
+    mt5_list.set_buffer(mt5_buf.clone());
+    mt5_list.set_color(DARK_BG);
+    mt5_list.set_text_color(TEXT_COLOR);
+    mt5_list.set_text_size(14);
+    mt5_list.set_text_font(Font::Courier); // tabular spacing
+
+    // Logs Area
+    let mut log_title = Frame::default().with_size(610, 25).with_label("📝 Activity Logs");
+    log_title.set_label_font(Font::HelveticaBold);
+    log_title.set_label_size(16);
+    log_title.set_label_color(TEXT_COLOR);
+    log_title.set_align(Align::Left | Align::Inside);
+
+    let mut log_buf = TextBuffer::default();
+    let mut log_view = TextDisplay::default().with_size(610, 150);
+    log_view.set_buffer(log_buf.clone());
+    log_view.set_color(Color::from_hex(0x111111));
+    log_view.set_text_color(Color::from_hex(0xaaaaaa));
+    log_view.set_text_size(12);
+    log_view.set_text_font(Font::Courier);
+
+    pack.end();
+    win.make_resizable(true);
+    win.end();
+    win.show();
+
+    // ---------------- Event Loop ----------------
+    let mut log_line_count = 0;
     
-    let result = eframe::run_native(
-        "EA Smart Server",
-        options,
-        Box::new(move |_cc| {
-            _cc.egui_ctx.set_visuals(egui::Visuals::dark());
-            Ok(Box::new(ServerApp {
-                state: app_state,
-                port,
-                local_ip,
-                port_status,
-            }))
-        }),
-    );
-
-    // 2. Headless VPS Fallback: If GUI fails (OpenGL error), switch to CLI mode
-    if let Err(e) = result {
-        println!("\n=======================================================");
-        println!("⚠️ GUI FAILED TO START: Graphics driver missing. (OpenGL Error)");
-        println!("Error details: {}", e);
-        println!("=======================================================");
-        println!("✅ FALLBACK: Running in Headless Terminal Mode.");
-        println!("The web server is fully functional in the background.");
-        println!("Access the dashboard via browser at: http://localhost:{}", port);
-        println!("Press Ctrl+C to shut down the server.");
-        println!("=======================================================\n");
-
-        let mut printed_logs = 0;
-        loop {
-            if let Ok(logs) = app_state_for_fallback.logs.lock() {
-                if logs.len() > printed_logs {
-                    for i in printed_logs..logs.len() {
-                        println!(">> {}", logs[i]);
-                    }
-                    printed_logs = logs.len();
-                }
+    // The loop keeps running, and `app::awake()` from Tokio will trigger an interaction
+    while app.wait() {
+        // UI Updates requested by async threads
+        
+        // 1. Update Logs
+        if let Ok(logs) = app_state.logs.lock() {
+            if logs.len() != log_line_count {
+                log_buf.set_text(&logs.join("\n"));
+                log_view.scroll(log_view.count_lines(0, log_buf.length(), true), 0);
+                log_line_count = logs.len();
             }
-            std::thread::sleep(std::time::Duration::from_millis(500));
         }
+
+        // 2. Update MT5 List
+        if let Ok(data) = app_state.instance_data.lock() {
+            let mut list_text = format!("{:<15} | {:<10} | {:<12} | {:<10} | {:<6}\n", "Account", "Symbol", "Equity", "Profit", "Orders");
+            list_text.push_str("----------------------------------------------------------------------\n");
+            
+            for (key, val) in data.iter() {
+                let parts: Vec<&str> = key.split(':').collect();
+                let acc = parts.get(0).unwrap_or(&"");
+                let sym = parts.get(1).unwrap_or(&"");
+                
+                let equity = val.get("equity").and_then(|v| v.as_f64()).unwrap_or(0.0);
+                let profit = val.get("total_profit").and_then(|v| v.as_f64()).unwrap_or(0.0);
+                let orders = val.get("open_orders").and_then(|v| v.as_i64()).unwrap_or(0);
+
+                let line = format!("{:<15} | {:<10} | ${:<11.2} | ${:<9.2} | {:<6}\n", acc, sym, equity, profit, orders);
+                list_text.push_str(&line);
+            }
+            if data.is_empty() {
+                list_text.push_str("      (No MT5 EAs Connected)\n");
+            }
+            mt5_buf.set_text(&list_text);
+        }
+        
     }
 }
