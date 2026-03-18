@@ -17,8 +17,9 @@ use mime_guess::from_path;
 use fltk::{
     app, button::Button, enums::{Color, Font, FrameType, Align},
     frame::Frame, group::{Group, Pack, Scroll}, prelude::*, window::DoubleWindow,
-    text::{TextDisplay, TextBuffer},
+    text::{TextDisplay, TextBuffer}, image::JpegImage,
 };
+use std::process::Command;
 
 // Embed the entire www/ folder content into the .exe
 #[derive(RustEmbed)]
@@ -257,6 +258,7 @@ fn main() {
     }));
 
     let app = app::App::default().with_scheme(app::Scheme::Gtk);
+    let (msg_sender, msg_receiver) = fltk::app::channel::<String>();
 
     let app_state = Arc::new(AppState {
         instance_data: Arc::new(Mutex::new(HashMap::new())),
@@ -313,14 +315,20 @@ fn main() {
     };
 
     // ---------------- UI Setup ----------------
-    let mut win = DoubleWindow::default().with_size(650, 550).center_screen().with_label("EA Smart Server (Native)");
+    let mut win = DoubleWindow::default().with_size(650, 620).center_screen().with_label("X-Server 1.0.0");
     win.set_color(DARK_BG);
+    
+    // Load Icon
+    let icon_data = include_bytes!("icon.jpg");
+    if let Ok(img) = JpegImage::from_data(icon_data) {
+        win.set_icon(Some(img));
+    }
 
-    let mut pack = Pack::default().with_size(610, 510).center_of_parent();
+    let mut pack = Pack::default().with_size(610, 580).center_of_parent();
     pack.set_spacing(15);
 
     // Title
-    let mut title = Frame::default().with_size(610, 40).with_label("EA Smart Dashboard Control Panel");
+    let mut title = Frame::default().with_size(610, 40).with_label("X-Server Control Panel 1.0.0");
     title.set_label_font(Font::HelveticaBold);
     title.set_label_size(24);
     title.set_label_color(TEXT_COLOR);
@@ -355,6 +363,94 @@ fn main() {
 
     status_group.end();
 
+    // Cloudflare Tunnel Panel
+    let mut cf_group = Group::default().with_size(610, 60);
+    cf_group.set_frame(FrameType::FlatBox);
+    cf_group.set_color(PANEL_BG);
+
+    let mut cf_label = Frame::default().with_size(150, 25).with_pos(cf_group.x() + 15, cf_group.y() + 15).with_label("Cloudflare Tunnel:");
+    cf_label.set_label_font(Font::HelveticaBold);
+    cf_label.set_label_size(14);
+    cf_label.set_label_color(TEXT_COLOR);
+    cf_label.set_align(Align::Left | Align::Inside);
+
+    let mut cf_status = Frame::default().with_size(140, 25).with_pos(cf_group.x() + 165, cf_group.y() + 15).with_label("Checking...");
+    cf_status.set_label_size(14);
+    cf_status.set_label_color(Color::Yellow);
+    cf_status.set_align(Align::Left | Align::Inside);
+
+    let mut cf_btn = Button::default().with_size(100, 30).with_pos(cf_group.x() + 310, cf_group.y() + 13).with_label("Check");
+    let mut cf_btn_dl = Button::default().with_size(160, 30).with_pos(cf_group.x() + 420, cf_group.y() + 13).with_label("Download / Install");
+    cf_btn_dl.hide();
+
+    let s1 = msg_sender.clone();
+    std::thread::spawn(move || {
+        let is_installed = if cfg!(target_os = "windows") {
+            Command::new("cloudflared.exe").arg("--version").output().is_ok() ||
+            Command::new("cloudflared").arg("--version").output().is_ok()
+        } else {
+            Command::new("cloudflared").arg("--version").output().is_ok()
+        };
+        if is_installed {
+            s1.send("CF_INSTALLED".to_string());
+        } else {
+            s1.send("CF_NOT_FOUND".to_string());
+        }
+        app::awake();
+    });
+
+    let s2 = msg_sender.clone();
+    cf_btn.set_callback(move |_| {
+        s2.send("CF_CHECKING".to_string());
+        let s2_thread = s2.clone();
+        std::thread::spawn(move || {
+            let is_installed = if cfg!(target_os = "windows") {
+                Command::new("cloudflared.exe").arg("--version").output().is_ok() ||
+                Command::new("cloudflared").arg("--version").output().is_ok()
+            } else {
+                Command::new("cloudflared").arg("--version").output().is_ok()
+            };
+            if is_installed {
+                s2_thread.send("CF_INSTALLED".to_string());
+            } else {
+                s2_thread.send("CF_NOT_FOUND".to_string());
+            }
+            app::awake();
+        });
+    });
+
+    let logs_dl = app_state.clone();
+    cf_btn_dl.set_callback(move |_| {
+        logs_dl.log("Starting Cloudflare Tunnel download...".to_string());
+        let logs_dl_thread = logs_dl.clone();
+        std::thread::spawn(move || {
+            let result = if cfg!(target_os = "windows") {
+                Command::new("powershell")
+                    .arg("-Command")
+                    .arg("Invoke-WebRequest -Uri 'https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe' -OutFile 'cloudflared.exe'")
+                    .output()
+            } else {
+                Command::new("sh")
+                    .arg("-c")
+                    .arg("curl -L -o cloudflared 'https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-darwin-amd64' && chmod +x cloudflared")
+                    .output()
+            };
+            
+            if let Ok(out) = result {
+                if out.status.success() {
+                    logs_dl_thread.log("Cloudflare Tunnel downloaded successfully!".to_string());
+                } else {
+                    logs_dl_thread.log("Failed to download cloudflared.".to_string());
+                }
+            } else {
+                logs_dl_thread.log("Error running download command.".to_string());
+            }
+            app::awake();
+        });
+    });
+
+    cf_group.end();
+
     // MT5 Connections Area
     let mut mt5_title = Frame::default().with_size(610, 25).with_label("📊 Connected MT5 Instances");
     mt5_title.set_label_font(Font::HelveticaBold);
@@ -387,7 +483,7 @@ fn main() {
     log_view.set_text_font(Font::Courier);
 
     pack.end();
-    win.make_resizable(true);
+    // Removed win.make_resizable(true) to fix window layout and hide maximize button
     win.end();
     win.show();
 
@@ -396,6 +492,26 @@ fn main() {
     
     // The loop keeps running, and `app::awake()` from Tokio will trigger an interaction
     while app.wait() {
+        if let Some(msg) = msg_receiver.recv() {
+            match msg.as_str() {
+                "CF_CHECKING" => {
+                    cf_status.set_label("Checking...");
+                    cf_status.set_label_color(Color::Yellow);
+                }
+                "CF_INSTALLED" => {
+                    cf_status.set_label("Ready");
+                    cf_status.set_label_color(ACCENT);
+                    cf_btn_dl.hide();
+                }
+                "CF_NOT_FOUND" => {
+                    cf_status.set_label("Not Found");
+                    cf_status.set_label_color(Color::Red);
+                    cf_btn_dl.show();
+                }
+                _ => {}
+            }
+        }
+        
         // UI Updates requested by async threads
         
         // 1. Update Logs
