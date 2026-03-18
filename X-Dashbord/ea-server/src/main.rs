@@ -75,16 +75,18 @@ async fn get_accounts(State(state): State<Arc<AppState>>) -> Json<Value> {
         let parts: Vec<&str> = k.split(':').collect();
         let acc_id = if !parts.is_empty() { parts[0] } else { "default" };
         let symbol = if parts.len() > 1 { parts[1] } else { "" };
-        let total_profit = v.get("total_profit").and_then(|p| p.as_f64()).unwrap_or(0.0);
-        let open_orders = v.get("open_orders").and_then(|o| o.as_i64()).unwrap_or(0);
-        let status = if open_orders > 0 { "Active" } else { "Standby" };
-        json!({
-            "account_id": acc_id,
-            "symbol": symbol,
-            "total_profit": total_profit,
-            "status": status,
-            "last_update": v.get("last_update").and_then(|l| l.as_str()).unwrap_or("")
-        })
+        
+        let mut cloned = v.clone();
+        if let Some(obj) = cloned.as_object_mut() {
+            obj.insert("account_id".to_string(), json!(acc_id));
+            if !obj.contains_key("symbol") || obj.get("symbol").and_then(|s| s.as_str()).unwrap_or("") == "" {
+                obj.insert("symbol".to_string(), json!(symbol));
+            }
+            let open_orders = obj.get("open_orders").and_then(|o| o.as_i64()).unwrap_or(0);
+            let status = if open_orders > 0 { "Active" } else { "Standby" };
+            obj.insert("status".to_string(), json!(status));
+        }
+        cloned
     }).collect();
     Json(json!(accounts))
 }
