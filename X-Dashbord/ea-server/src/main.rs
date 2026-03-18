@@ -369,6 +369,16 @@ fn main() {
     let msg_sender_tokio = msg_sender.clone();
     
     // Check if port is available before starting Axum
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        let _ = std::process::Command::new("cmd")
+            .args(&["/C", "FOR /F \"tokens=5\" %T IN ('netstat -ano ^| findstr :3000 ^| findstr LISTENING') DO taskkill /F /PID %T > NUL 2>&1"])
+            .creation_flags(0x08000000)
+            .output();
+        std::thread::sleep(std::time::Duration::from_millis(800)); // wait for OS to free the port
+    }
+
     let port_status = match std::net::TcpListener::bind(format!("0.0.0.0:{}", port)) {
         Ok(std_listener) => {
             drop(std_listener); // Let tokio bind
@@ -474,54 +484,69 @@ fn main() {
         };
         
         if is_installed {
-            s3.send("CF_STARTING".to_string());
-            let s3_thread = s3.clone();
-            #[allow(unused_variables)]
-            let _app_state_thread = st_app.clone();
-            std::thread::spawn(move || {
-                use std::process::Stdio;
-                use std::io::{BufRead, BufReader};
-                #[cfg(target_os = "windows")]
-                use std::os::windows::process::CommandExt;
-                
-                let bin_name = if cfg!(target_os = "windows") { "cloudflared.exe" } else { "cloudflared" };
-                
-                let mut cmd = Command::new(bin_name);
-                #[cfg(target_os = "windows")]
-                cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
-                
-                let child = cmd
-                    .arg("tunnel")
-                    .arg("--url")
-                    .arg(format!("http://localhost:{}", cf_port))
-                    .stdout(Stdio::piped())
-                    .stderr(Stdio::piped())
-                    .spawn();
+            let is_running = if cfg!(target_os = "windows") {
+                if let Ok(out) = std::process::Command::new("tasklist").args(&["/FI", "IMAGENAME eq cloudflared.exe", "/NH"]).output() {
+                    String::from_utf8_lossy(&out.stdout).contains("cloudflared.exe")
+                } else { false }
+            } else { false };
+
+            if is_running {
+                if let Ok(saved_url) = std::fs::read_to_string(".cloudflare_url") {
+                    s3.send(format!("CF_URL:{}", saved_url.trim()));
+                } else {
+                    s3.send("CF_URL:Running (URL unknown, please restart tunnel to get URL)".to_string());
+                }
+            } else {
+                s3.send("CF_STARTING".to_string());
+                let s3_thread = s3.clone();
+                #[allow(unused_variables)]
+                let _app_state_thread = st_app.clone();
+                std::thread::spawn(move || {
+                    use std::process::Stdio;
+                    use std::io::{BufRead, BufReader};
+                    #[cfg(target_os = "windows")]
+                    use std::os::windows::process::CommandExt;
                     
-                if let Ok(mut process) = child {
-                    let stderr = process.stderr.take().unwrap();
-                    let reader = BufReader::new(stderr);
+                    let bin_name = if cfg!(target_os = "windows") { "cloudflared.exe" } else { "cloudflared" };
                     
-                    for line in reader.lines() {
-                        if let Ok(l) = line {
-                            if l.contains("trycloudflare.com") {
-                                if let Some(idx) = l.find("https://") {
-                                    let mut ends = idx;
-                                    while ends < l.len() && &l[ends..ends+1] != " " && &l[ends..ends+1] != "|" {
-                                        ends += 1;
+                    let mut cmd = Command::new(bin_name);
+                    #[cfg(target_os = "windows")]
+                    cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+                    
+                    let child = cmd
+                        .arg("tunnel")
+                        .arg("--url")
+                        .arg(format!("http://localhost:{}", cf_port))
+                        .stdout(Stdio::piped())
+                        .stderr(Stdio::piped())
+                        .spawn();
+                        
+                    if let Ok(mut process) = child {
+                        let stderr = process.stderr.take().unwrap();
+                        let reader = BufReader::new(stderr);
+                        
+                        for line in reader.lines() {
+                            if let Ok(l) = line {
+                                if l.contains("trycloudflare.com") {
+                                    if let Some(idx) = l.find("https://") {
+                                        let mut ends = idx;
+                                        while ends < l.len() && &l[ends..ends+1] != " " && &l[ends..ends+1] != "|" {
+                                            ends += 1;
+                                        }
+                                        let url = l[idx..ends].to_string();
+                                        let _ = std::fs::write(".cloudflare_url", &url);
+                                        s3_thread.send(format!("CF_URL:{}", url));
+                                        app::awake();
                                     }
-                                    let url = l[idx..ends].to_string();
-                                    s3_thread.send(format!("CF_URL:{}", url));
-                                    app::awake();
                                 }
                             }
                         }
+                    } else {
+                        s3_thread.send("CF_START_ERROR".to_string());
+                        app::awake();
                     }
-                } else {
-                    s3_thread.send("CF_START_ERROR".to_string());
-                    app::awake();
-                }
-            });
+                });
+            }
         } else {
             s3.send("CF_NOT_FOUND".to_string());
         }
