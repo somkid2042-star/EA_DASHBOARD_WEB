@@ -3,7 +3,7 @@
 use axum::{
     extract::{Query, State, Json},
     routing::{get, post},
-    response::{IntoResponse, Response},
+    response::IntoResponse,
     Router,
     http::{StatusCode, header, Uri},
 };
@@ -16,7 +16,7 @@ use mime_guess::from_path;
 
 use fltk::{
     app, button::Button, enums::{Color, Font, FrameType, Align},
-    frame::Frame, group::{Group, Pack, Scroll}, prelude::*, window::DoubleWindow,
+    frame::Frame, group::{Group, Pack}, prelude::*, window::DoubleWindow,
     text::{TextDisplay, TextBuffer}, image::JpegImage,
 };
 use std::process::Command;
@@ -31,6 +31,7 @@ pub struct AppState {
     instance_commands: Arc<Mutex<HashMap<String, Vec<Value>>>>,
     preloaded_settings: Arc<Mutex<HashMap<String, Value>>>,
     logs: Arc<Mutex<Vec<String>>>,
+    pub cloudflare_url: Arc<Mutex<Option<String>>>,
 }
 
 impl AppState {
@@ -38,12 +39,20 @@ impl AppState {
         if let Ok(mut logs) = self.logs.lock() {
             let log_entry = format!("[{}] {}", chrono::Local::now().format("%H:%M:%S"), msg);
             logs.push(log_entry);
-            // Keep last 100 logs
             if logs.len() > 100 {
                 logs.remove(0);
             }
         }
     }
+}
+
+// ---------------- AXUM HANDLERS ----------------
+async fn get_info(State(state): State<Arc<AppState>>) -> Json<Value> {
+    let url = state.cloudflare_url.lock().unwrap().clone();
+    Json(json!({
+        "version": env!("CARGO_PKG_VERSION"),
+        "cloudflare_url": url
+    }))
 }
 
 // Handler for embedded static files
@@ -346,6 +355,7 @@ fn main() {
         instance_commands: Arc::new(Mutex::new(HashMap::new())),
         preloaded_settings: Arc::new(Mutex::new(HashMap::new())),
         logs: Arc::new(Mutex::new(vec![])),
+        cloudflare_url: Arc::new(Mutex::new(None)),
     });
 
     let port = 3000u16;
@@ -373,6 +383,7 @@ fn main() {
 
                 let cors = CorsLayer::new().allow_origin(Any).allow_methods(Any).allow_headers(Any);
                 let router = Router::new()
+                    .route("/api/info", get(get_info))
                     .route("/api/accounts", get(get_accounts))
                     .route("/api/ea-stats", get(get_stats).post(post_stats))
                     .route("/api/close-order", post(post_close_order))
@@ -449,7 +460,7 @@ fn main() {
     status_group.end();
 
     // Cloudflare Tunnel Panel
-    let mut cf_group = Group::default().with_size(610, 60);
+    let mut cf_group = Group::default().with_size(610, 90);
     cf_group.set_frame(FrameType::FlatBox);
     cf_group.set_color(PANEL_BG);
 
@@ -464,9 +475,22 @@ fn main() {
     cf_status.set_label_color(Color::Yellow);
     cf_status.set_align(Align::Left | Align::Inside);
 
-    let mut cf_btn = Button::default().with_size(100, 30).with_pos(cf_group.x() + 310, cf_group.y() + 13).with_label("Check");
-    let mut cf_btn_dl = Button::default().with_size(160, 30).with_pos(cf_group.x() + 420, cf_group.y() + 13).with_label("Download / Install");
+    let mut cf_btn = Button::default().with_size(60, 30).with_pos(cf_group.x() + 310, cf_group.y() + 13).with_label("Check");
+    let mut cf_btn_dl = Button::default().with_size(120, 30).with_pos(cf_group.x() + 380, cf_group.y() + 13).with_label("Install");
+    let mut cf_btn_start = Button::default().with_size(90, 30).with_pos(cf_group.x() + 505, cf_group.y() + 13).with_label("Start Tunnel");
     cf_btn_dl.hide();
+    cf_btn_start.deactivate();
+
+    let mut cf_url_lbl = Frame::default().with_size(80, 25).with_pos(cf_group.x() + 15, cf_group.y() + 50).with_label("Public URL:");
+    cf_url_lbl.set_label_size(14);
+    cf_url_lbl.set_label_color(TEXT_COLOR);
+    cf_url_lbl.set_align(Align::Left | Align::Inside);
+
+    let mut cf_url_input = fltk::input::Input::default().with_size(485, 25).with_pos(cf_group.x() + 100, cf_group.y() + 50);
+    cf_url_input.set_color(Color::from_hex(0x1a1a1a));
+    cf_url_input.set_text_color(ACCENT);
+    cf_url_input.set_value("Stopped.");
+    cf_url_input.set_readonly(true);
 
     let s1 = msg_sender.clone();
     std::thread::spawn(move || {
@@ -533,6 +557,54 @@ fn main() {
             app::awake();
         });
     });
+    let s3 = msg_sender.clone();
+    let cf_port = port;
+    let st_app = app_state.clone();
+    cf_btn_start.set_callback(move |_| {
+        s3.send("CF_STARTING".to_string());
+        let s3_thread = s3.clone();
+        let port_c = cf_port;
+        #[allow(unused_variables)]
+        let _app_state_thread = st_app.clone();
+        std::thread::spawn(move || {
+            use std::process::Stdio;
+            use std::io::{BufRead, BufReader};
+            
+            let bin_name = if cfg!(target_os = "windows") { "cloudflared.exe" } else { "cloudflared" };
+            let child = Command::new(bin_name)
+                .arg("tunnel")
+                .arg("--url")
+                .arg(format!("http://localhost:{}", port_c))
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .spawn();
+                
+            if let Ok(mut process) = child {
+                let stderr = process.stderr.take().unwrap();
+                let reader = BufReader::new(stderr);
+                
+                for line in reader.lines() {
+                    if let Ok(l) = line {
+                        if l.contains("trycloudflare.com") {
+                            // Extract URL roughly
+                            if let Some(idx) = l.find("https://") {
+                                let mut ends = idx;
+                                while ends < l.len() && &l[ends..ends+1] != " " && &l[ends..ends+1] != "|" {
+                                    ends += 1;
+                                }
+                                let url = l[idx..ends].to_string();
+                                s3_thread.send(format!("CF_URL:{}", url));
+                                app::awake();
+                            }
+                        }
+                    }
+                }
+            } else {
+                s3_thread.send("CF_START_ERROR".to_string());
+                app::awake();
+            }
+        });
+    });
 
     cf_group.end();
 
@@ -587,11 +659,32 @@ fn main() {
                     cf_status.set_label("Ready");
                     cf_status.set_label_color(ACCENT);
                     cf_btn_dl.hide();
+                    cf_btn_start.activate();
                 }
                 "CF_NOT_FOUND" => {
                     cf_status.set_label("Not Found");
                     cf_status.set_label_color(Color::Red);
                     cf_btn_dl.show();
+                    cf_btn_start.deactivate();
+                }
+                "CF_STARTING" => {
+                    cf_status.set_label("Starting...");
+                    cf_status.set_label_color(Color::Yellow);
+                    cf_btn_start.deactivate();
+                    cf_url_input.set_value("Waiting for Cloudflare URL...");
+                }
+                "CF_START_ERROR" => {
+                    cf_status.set_label("Start Error");
+                    cf_status.set_label_color(Color::Red);
+                    cf_btn_start.activate();
+                    cf_url_input.set_value("Failed to run cloudflared.");
+                }
+                msg if msg.starts_with("CF_URL:") => {
+                    cf_status.set_label("Online");
+                    cf_status.set_label_color(ACCENT);
+                    let url = msg.strip_prefix("CF_URL:").unwrap().to_string();
+                    cf_url_input.set_value(&url);
+                    *app_state.cloudflare_url.lock().unwrap() = Some(url);
                 }
                 "UPDATE_STARTING" => {
                     title.set_label(&format!("X-Server Control Panel {} (Updating...)", env!("CARGO_PKG_VERSION")));
