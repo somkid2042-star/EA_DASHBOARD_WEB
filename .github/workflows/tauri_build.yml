@@ -1,4 +1,4 @@
-name: Release EA Server
+name: Release X-Server
 
 on:
   push:
@@ -24,30 +24,30 @@ jobs:
 
       - name: Rename Binary
         working-directory: ./X-Dashbord/ea-server
-        run: Rename-Item -Path "target\release\ea-server.exe" -NewName "EA_Smart_Server_v1.3.1.exe"
+        run: Rename-Item -Path "target\release\x-server.exe" -NewName "X-Server_v1.0.0.exe"
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: EA_Smart_Server_Windows
-          path: X-Dashbord/ea-server/target/release/EA_Smart_Server_v1.3.1.exe
+          name: X-Server_Windows
+          path: X-Dashbord/ea-server/target/release/X-Server_v1.0.0.exe
           
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "v1.3.1"
-          name: "EA Smart Server v1.3.1 (Hide Console Window)"
+          tag_name: "X-Server-v1.0.0"
+          name: "X-Server v1.0.0 (Native Edition)"
           body: |
-            🚀 **EA Smart Server — Native Edition**
+            🚀 **X-Server — Native Edition**
             
             Ultra-lightweight Windows desktop server app.
             - Displays a native GUI Control Panel (Status, MT5 Connections, Logs)
             - Embeds the full Web Dashboard (accessible via mobile at port 3000)
-            - Replaces the old Node.js and Tauri versions with a single standalone `.exe` file.
+            - Includes Cloudflare Tunnel checks and automatic installation.
             
             **Downloads:**
-            - `EA_Smart_Server_v1.3.1.exe` — Standalone Executable (No installation required)
-          files: X-Dashbord/ea-server/target/release/EA_Smart_Server_v1.3.1.exe
+            - `X-Server_v1.0.0.exe` — Standalone Executable (No installation required)
+          files: X-Dashbord/ea-server/target/release/X-Server_v1.0.0.exe
           make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
