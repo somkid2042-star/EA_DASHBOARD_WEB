@@ -1461,7 +1461,11 @@
                 if (sym.includes('XAU')) newStrategy = 'XAU_TREND';
                 else if (sym.includes('BTC')) newStrategy = 'BTC_MOMENTUM';
 
-                let shouldRenderSettings = firstLoad || newStrategy !== currentStrategy;
+                let settingsStr = JSON.stringify(data.ea_settings || {});
+                let settingsChanged = window._lastSettingsJson !== undefined && window._lastSettingsJson !== settingsStr;
+
+                let shouldRenderSettings = firstLoad || newStrategy !== currentStrategy || settingsChanged;
+
                 if (!shouldRenderSettings && data.ea_settings && Object.keys(data.ea_settings).length > 0) {
                     const startLotInput = document.getElementById('set_start_lot') || document.getElementById('set_xau_rsi_period') || document.getElementById('set_btc_lot_size');
                     if (startLotInput && startLotInput.value === '') {
@@ -1469,9 +1473,15 @@
                     }
                 }
 
-                if (shouldRenderSettings) {
+                // Do not re-render if the user is actively focused on a setting input field
+                const isSettingsFocused = document.activeElement &&
+                    (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT') &&
+                    document.activeElement.closest('#settings-form-container');
+
+                if (shouldRenderSettings && !isSettingsFocused) {
                     currentStrategy = newStrategy;
                     localStorage.setItem('ea_last_strategy', currentStrategy);
+                    window._lastSettingsJson = settingsStr;
                     renderSettingsForm(newStrategy, data.ea_settings || {});
                     firstLoad = false;
                 }
