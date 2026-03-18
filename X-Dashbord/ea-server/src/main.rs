@@ -294,20 +294,24 @@ async fn check_for_updates(app_state: Arc<AppState>, ui_sender: fltk::app::Sende
                                 if let Ok(bytes) = resp.bytes().await {
                                     let exe_path = std::env::current_exe().unwrap_or_else(|_| std::path::PathBuf::from("X-Server.exe"));
                                     let exe_name = exe_path.file_name().unwrap().to_str().unwrap();
-                                    let update_exe = format!("{}_update.exe", exe_name);
+                                    
+                                    let exe_dir = exe_path.parent().unwrap_or(std::path::Path::new("."));
+                                    let update_exe = exe_dir.join(format!("{}_update.exe", exe_name));
                                     
                                     let _ = std::fs::write(&update_exe, &bytes);
 
                                     let bat_content = format!(
                                         "@echo off\n\
-                                        timeout /t 2 /nobreak > NUL\n\
+                                        taskkill /F /IM \"{}\" /T > NUL 2>&1\n\
+                                        timeout /t 1 /nobreak > NUL\n\
                                         del \"{}\"\n\
                                         rename \"{}\" \"{}\"\n\
                                         start \"\" \"{}\"\n\
                                         del \"%~f0\"",
-                                        exe_name, update_exe, exe_name, exe_name
+                                        exe_name, exe_path.display(), update_exe.display(), exe_name, exe_path.display()
                                     );
-                                    let _ = std::fs::write("update.bat", bat_content);
+                                    let bat_path = exe_dir.join("update.bat");
+                                    let _ = std::fs::write(&bat_path, bat_content);
 
                                     app_state.log("✅ Update ready! Restarting automatically...".to_string());
                                     ui_sender.send("UPDATE_READY".to_string());
@@ -316,7 +320,7 @@ async fn check_for_updates(app_state: Arc<AppState>, ui_sender: fltk::app::Sende
                                     std::thread::sleep(std::time::Duration::from_millis(500));
                                     let _ = std::process::Command::new("cmd")
                                         .arg("/C")
-                                        .arg("update.bat")
+                                        .arg(exe_dir.join("update.bat").to_str().unwrap())
                                         .spawn();
                                         
                                     std::process::exit(0);
@@ -484,19 +488,31 @@ fn main() {
         };
         
         if is_installed {
-            let is_running = if cfg!(target_os = "windows") {
+            let mut is_running = if cfg!(target_os = "windows") {
                 if let Ok(out) = std::process::Command::new("tasklist").args(&["/FI", "IMAGENAME eq cloudflared.exe", "/NH"]).output() {
                     String::from_utf8_lossy(&out.stdout).contains("cloudflared.exe")
                 } else { false }
             } else { false };
 
             if is_running {
+                let mut has_valid_url = false;
                 if let Ok(saved_url) = std::fs::read_to_string(".cloudflare_url") {
-                    s3.send(format!("CF_URL:{}", saved_url.trim()));
-                } else {
-                    s3.send("CF_URL:Running (URL unknown, please restart tunnel to get URL)".to_string());
+                    let s = saved_url.trim();
+                    if s.contains("trycloudflare.com") {
+                        s3.send(format!("CF_URL:{}", s));
+                        has_valid_url = true;
+                    }
                 }
-            } else {
+                
+                if !has_valid_url {
+                    #[cfg(target_os = "windows")]
+                    let _ = std::process::Command::new("taskkill").args(&["/F", "/IM", "cloudflared.exe", "/T"]).output();
+                    
+                    is_running = false;
+                }
+            }
+            
+            if !is_running {
                 s3.send("CF_STARTING".to_string());
                 let s3_thread = s3.clone();
                 #[allow(unused_variables)]
