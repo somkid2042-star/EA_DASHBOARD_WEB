@@ -22,21 +22,28 @@ jobs:
         working-directory: ./X-Dashbord/ea-server
         run: cargo build --release
 
+      - name: Get Version
+        id: get_version
+        working-directory: ./X-Dashbord/ea-server
+        run: |
+          $ver = (Get-Content Cargo.toml | Select-String -Pattern '^version\s*=\s*"(.*)"').Matches.Groups[1].Value
+          echo "VERSION=$ver" >> $env:GITHUB_ENV
+
       - name: Rename Binary
         working-directory: ./X-Dashbord/ea-server
-        run: Rename-Item -Path "target\release\x-server.exe" -NewName "X-Server_v1.0.0.exe"
+        run: Rename-Item -Path "target\release\x-server.exe" -NewName "X-Server_v${{ env.VERSION }}.exe"
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: X-Server_Windows
-          path: X-Dashbord/ea-server/target/release/X-Server_v1.0.0.exe
+          path: X-Dashbord/ea-server/target/release/X-Server_v${{ env.VERSION }}.exe
           
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "X-Server-v1.0.0"
-          name: "X-Server v1.0.0 (Native Edition)"
+          tag_name: "v${{ env.VERSION }}"
+          name: "X-Server v${{ env.VERSION }} (Native Edition)"
           body: |
             🚀 **X-Server — Native Edition**
             
@@ -44,10 +51,11 @@ jobs:
             - Displays a native GUI Control Panel (Status, MT5 Connections, Logs)
             - Embeds the full Web Dashboard (accessible via mobile at port 3000)
             - Includes Cloudflare Tunnel checks and automatic installation.
+            - **Auto-Updater Included**
             
             **Downloads:**
-            - `X-Server_v1.0.0.exe` — Standalone Executable (No installation required)
-          files: X-Dashbord/ea-server/target/release/X-Server_v1.0.0.exe
+            - `X-Server_v${{ env.VERSION }}.exe` — Standalone Executable (No installation required)
+          files: X-Dashbord/ea-server/target/release/X-Server_v${{ env.VERSION }}.exe
           make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

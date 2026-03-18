@@ -251,6 +251,82 @@ const PANEL_BG: Color = Color::from_hex(0x2d2d2d);
 const TEXT_COLOR: Color = Color::from_hex(0xe0e0e0);
 const ACCENT: Color = Color::from_hex(0x00a86b); // Neon Green
 
+#[cfg(target_os = "windows")]
+async fn check_for_updates(app_state: Arc<AppState>, ui_sender: fltk::app::Sender<String>) {
+    let current_version = env!("CARGO_PKG_VERSION");
+    let url = "https://api.github.com/repos/somkid2042-star/EA_DASHBOARD_WEB/releases/latest";
+    let client = reqwest::Client::new();
+    
+    if let Ok(res) = client.get(url).header("User-Agent", "X-Server-Updater").send().await {
+        if let Ok(release) = res.json::<serde_json::Value>().await {
+            if let Some(tag) = release.get("tag_name").and_then(|t| t.as_str()) {
+                let latest_version = tag.strip_prefix("X-Server-v").or_else(|| tag.strip_prefix("v")).unwrap_or(tag);
+                if latest_version != current_version {
+                    app_state.log(format!("🔄 New version {} found (Current: {}). Downloading...", latest_version, current_version));
+                    ui_sender.send("UPDATE_STARTING".to_string());
+                    app::awake();
+
+                    if let Some(assets) = release.get("assets").and_then(|a| a.as_array()) {
+                        let mut download_url = None;
+                        for asset in assets {
+                            if let Some(name) = asset.get("name").and_then(|n| n.as_str()) {
+                                if name.ends_with(".exe") && name.contains("X-Server") {
+                                    download_url = asset.get("browser_download_url").and_then(|u| u.as_str());
+                                    break;
+                                }
+                            }
+                        }
+
+                        if let Some(url) = download_url {
+                            if let Ok(resp) = client.get(url).header("User-Agent", "X-Server-Updater").send().await {
+                                if let Ok(bytes) = resp.bytes().await {
+                                    let exe_path = std::env::current_exe().unwrap_or_else(|_| std::path::PathBuf::from("X-Server.exe"));
+                                    let exe_name = exe_path.file_name().unwrap().to_str().unwrap();
+                                    let update_exe = format!("{}_update.exe", exe_name);
+                                    
+                                    let _ = std::fs::write(&update_exe, &bytes);
+
+                                    let bat_content = format!(
+                                        "@echo off\n\
+                                        timeout /t 2 /nobreak > NUL\n\
+                                        del \"{}\"\n\
+                                        rename \"{}\" \"{}\"\n\
+                                        start \"\" \"{}\"\n\
+                                        del \"%~f0\"",
+                                        exe_name, update_exe, exe_name, exe_name
+                                    );
+                                    let _ = std::fs::write("update.bat", bat_content);
+
+                                    app_state.log("✅ Update ready! Restarting automatically...".to_string());
+                                    ui_sender.send("UPDATE_READY".to_string());
+                                    app::awake();
+                                    
+                                    std::thread::sleep(std::time::Duration::from_millis(500));
+                                    let _ = std::process::Command::new("cmd")
+                                        .arg("/C")
+                                        .arg("update.bat")
+                                        .spawn();
+                                        
+                                    std::process::exit(0);
+                                }
+                            }
+                        }
+                    }
+                    app_state.log("❌ Update failed: Could not download the asset.".to_string());
+                    ui_sender.send("UPDATE_FAILED".to_string());
+                    app::awake();
+                }
+            }
+        }
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+async fn check_for_updates(app_state: Arc<AppState>, _ui_sender: fltk::app::Sender<String>) {
+    app_state.log("ℹ️ Auto-update skipped (Not on Windows).".to_string());
+    app::awake();
+}
+
 fn main() {
     // Setup panic hook to log crashes to text file for debugging
     std::panic::set_hook(Box::new(|info| {
@@ -277,6 +353,7 @@ fn main() {
     let server_state = app_state.clone();
     
     let app_state_tokio = app_state.clone();
+    let msg_sender_tokio = msg_sender.clone();
     
     // Check if port is available before starting Axum
     let port_status = match std::net::TcpListener::bind(format!("0.0.0.0:{}", port)) {
@@ -286,6 +363,9 @@ fn main() {
             rt.spawn(async move {
                 let preload_state = server_state.preloaded_settings.clone();
                 let logs_state = server_state.logs.clone();
+                let app_update = app_state_tokio.clone();
+                let sender_update = msg_sender_tokio.clone();
+                tokio::spawn(async move { check_for_updates(app_update, sender_update).await; });
                 tokio::spawn(async move { preload_settings(preload_state, logs_state).await; });
 
                 let cors = CorsLayer::new().allow_origin(Any).allow_methods(Any).allow_headers(Any);
@@ -317,7 +397,7 @@ fn main() {
     };
 
     // ---------------- UI Setup ----------------
-    let mut win = DoubleWindow::default().with_size(650, 620).center_screen().with_label("X-Server 1.0.0");
+    let mut win = DoubleWindow::default().with_size(650, 620).center_screen().with_label(&format!("X-Server {}", env!("CARGO_PKG_VERSION")));
     win.set_color(DARK_BG);
     
     // Load Icon
@@ -330,7 +410,7 @@ fn main() {
     pack.set_spacing(15);
 
     // Title
-    let mut title = Frame::default().with_size(610, 40).with_label("X-Server Control Panel 1.0.0");
+    let mut title = Frame::default().with_size(610, 40).with_label(&format!("X-Server Control Panel {}", env!("CARGO_PKG_VERSION")));
     title.set_label_font(Font::HelveticaBold);
     title.set_label_size(24);
     title.set_label_color(TEXT_COLOR);
@@ -509,6 +589,18 @@ fn main() {
                     cf_status.set_label("Not Found");
                     cf_status.set_label_color(Color::Red);
                     cf_btn_dl.show();
+                }
+                "UPDATE_STARTING" => {
+                    title.set_label(&format!("X-Server Control Panel {} (Updating...)", env!("CARGO_PKG_VERSION")));
+                    title.set_label_color(Color::Yellow);
+                }
+                "UPDATE_READY" => {
+                    title.set_label(&format!("X-Server Control Panel {} (Restarting...)", env!("CARGO_PKG_VERSION")));
+                    title.set_label_color(Color::Green);
+                }
+                "UPDATE_FAILED" => {
+                    title.set_label(&format!("X-Server Control Panel {} (Update Failed)", env!("CARGO_PKG_VERSION")));
+                    title.set_label_color(Color::Red);
                 }
                 _ => {}
             }
