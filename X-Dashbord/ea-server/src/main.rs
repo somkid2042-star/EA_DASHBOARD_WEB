@@ -300,15 +300,16 @@ async fn check_for_updates(app_state: Arc<AppState>, ui_sender: fltk::app::Sende
                                     
                                     let _ = std::fs::write(&update_exe, &bytes);
 
+                                    let my_pid = std::process::id();
                                     let bat_content = format!(
                                         "@echo off\n\
-                                        taskkill /F /IM \"{}\" /T > NUL 2>&1\n\
+                                        taskkill /F /PID {} > NUL 2>&1\n\
                                         timeout /t 1 /nobreak > NUL\n\
                                         del \"{}\"\n\
                                         rename \"{}\" \"{}\"\n\
                                         start \"\" \"{}\"\n\
                                         del \"%~f0\"",
-                                        exe_name, exe_path.display(), update_exe.display(), exe_name, exe_path.display()
+                                        my_pid, exe_path.display(), update_exe.display(), exe_name, exe_path.display()
                                     );
                                     let bat_path = exe_dir.join("update.bat");
                                     let _ = std::fs::write(&bat_path, bat_content);
@@ -541,9 +542,16 @@ fn main() {
                     #[cfg(target_os = "windows")]
                     use std::os::windows::process::CommandExt;
                     
+                    let exe_path_inner = std::env::current_exe().unwrap_or_else(|_| std::path::PathBuf::from("X-Server.exe"));
+                    let exe_dir_inner = exe_path_inner.parent().unwrap_or(std::path::Path::new("."));
+                    let log_file_path = exe_dir_inner.join("cloudflared.log");
+                    
+                    let stdout_file = std::fs::File::create(&log_file_path).unwrap();
+                    let stderr_file = stdout_file.try_clone().unwrap();
+
                     let bin_name = if cfg!(target_os = "windows") { "cloudflared.exe" } else { "cloudflared" };
                     
-                    let mut cmd = Command::new(bin_name);
+                    let mut cmd = std::process::Command::new(bin_name);
                     #[cfg(target_os = "windows")]
                     cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
                     
@@ -551,34 +559,40 @@ fn main() {
                         .arg("tunnel")
                         .arg("--url")
                         .arg(format!("http://localhost:{}", cf_port))
-                        .stdout(Stdio::piped())
-                        .stderr(Stdio::piped())
+                        .stdout(Stdio::from(stdout_file))
+                        .stderr(Stdio::from(stderr_file))
                         .spawn();
                         
-                    if let Ok(mut process) = child {
-                        let stderr = process.stderr.take().unwrap();
-                        let reader = BufReader::new(stderr);
-                        
-                        for line in reader.lines() {
-                            if let Ok(l) = line {
-                                if l.contains("trycloudflare.com") {
-                                    if let Some(idx) = l.find("https://") {
-                                        let mut ends = idx;
-                                        while ends < l.len() && &l[ends..ends+1] != " " && &l[ends..ends+1] != "|" {
-                                            ends += 1;
+                    if let Ok(_process) = child {
+                        let mut found = false;
+                        for _ in 0..120 { // Try up to 60 seconds
+                            std::thread::sleep(std::time::Duration::from_millis(500));
+                            if let Ok(content) = std::fs::read_to_string(&log_file_path) {
+                                for line in content.lines() {
+                                    if line.contains("trycloudflare.com") {
+                                        if let Some(idx) = line.find("https://") {
+                                            let mut ends = idx;
+                                            while ends < line.len() && &line[ends..ends+1] != " " && &line[ends..ends+1] != "|" && &line[ends..ends+1] != "\"" {
+                                                ends += 1;
+                                            }
+                                            let url = line[idx..ends].to_string();
+                                            
+                                            let cf_url_file_inner = exe_dir_inner.join(".cloudflare_url");
+                                            let _ = std::fs::write(&cf_url_file_inner, &url);
+                                            
+                                            s3_thread.send(format!("CF_URL:{}", url));
+                                            app::awake();
+                                            found = true;
+                                            break;
                                         }
-                                        let url = l[idx..ends].to_string();
-                                        
-                                        let exe_path_inner = std::env::current_exe().unwrap_or_else(|_| std::path::PathBuf::from("X-Server.exe"));
-                                        let exe_dir_inner = exe_path_inner.parent().unwrap_or(std::path::Path::new("."));
-                                        let cf_url_file_inner = exe_dir_inner.join(".cloudflare_url");
-                                        let _ = std::fs::write(&cf_url_file_inner, &url);
-                                        
-                                        s3_thread.send(format!("CF_URL:{}", url));
-                                        app::awake();
                                     }
                                 }
                             }
+                            if found { break; }
+                        }
+                        if !found {
+                            s3_thread.send("CF_START_ERROR".to_string());
+                            app::awake();
                         }
                     } else {
                         s3_thread.send("CF_START_ERROR".to_string());
