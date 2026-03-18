@@ -376,10 +376,21 @@ fn main() {
     #[cfg(target_os = "windows")]
     {
         use std::os::windows::process::CommandExt;
-        let _ = std::process::Command::new("cmd")
-            .args(&["/C", "FOR /F \"tokens=5\" %T IN ('netstat -ano ^| findstr :3000 ^| findstr LISTENING') DO taskkill /F /PID %T > NUL 2>&1"])
-            .creation_flags(0x08000000)
-            .output();
+        if let Ok(output) = std::process::Command::new("netstat").args(&["-ano"]).creation_flags(0x08000000).output() {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            for line in stdout.lines() {
+                if line.contains(":3000") && line.contains("LISTENING") {
+                    let parts: Vec<&str> = line.split_whitespace().collect();
+                    if parts.len() >= 5 {
+                        let pid = parts[4];
+                        let _ = std::process::Command::new("taskkill")
+                            .args(&["/F", "/PID", pid])
+                            .creation_flags(0x08000000)
+                            .output();
+                    }
+                }
+            }
+        }
         std::thread::sleep(std::time::Duration::from_millis(800)); // wait for OS to free the port
     }
 
@@ -489,14 +500,19 @@ fn main() {
         
         if is_installed {
             let mut is_running = if cfg!(target_os = "windows") {
-                if let Ok(out) = std::process::Command::new("tasklist").args(&["/FI", "IMAGENAME eq cloudflared.exe", "/NH"]).output() {
+                use std::os::windows::process::CommandExt;
+                if let Ok(out) = std::process::Command::new("tasklist").args(&["/FI", "IMAGENAME eq cloudflared.exe", "/NH"]).creation_flags(0x08000000).output() {
                     String::from_utf8_lossy(&out.stdout).contains("cloudflared.exe")
                 } else { false }
             } else { false };
 
+            let exe_path = std::env::current_exe().unwrap_or_else(|_| std::path::PathBuf::from("X-Server.exe"));
+            let exe_dir = exe_path.parent().unwrap_or(std::path::Path::new("."));
+            let cf_url_file = exe_dir.join(".cloudflare_url");
+
             if is_running {
                 let mut has_valid_url = false;
-                if let Ok(saved_url) = std::fs::read_to_string(".cloudflare_url") {
+                if let Ok(saved_url) = std::fs::read_to_string(&cf_url_file) {
                     let s = saved_url.trim();
                     if s.contains("trycloudflare.com") {
                         s3.send(format!("CF_URL:{}", s));
@@ -506,8 +522,10 @@ fn main() {
                 
                 if !has_valid_url {
                     #[cfg(target_os = "windows")]
-                    let _ = std::process::Command::new("taskkill").args(&["/F", "/IM", "cloudflared.exe", "/T"]).output();
-                    
+                    {
+                        use std::os::windows::process::CommandExt;
+                        let _ = std::process::Command::new("taskkill").args(&["/F", "/IM", "cloudflared.exe", "/T"]).creation_flags(0x08000000).output();
+                    }
                     is_running = false;
                 }
             }
@@ -550,7 +568,12 @@ fn main() {
                                             ends += 1;
                                         }
                                         let url = l[idx..ends].to_string();
-                                        let _ = std::fs::write(".cloudflare_url", &url);
+                                        
+                                        let exe_path_inner = std::env::current_exe().unwrap_or_else(|_| std::path::PathBuf::from("X-Server.exe"));
+                                        let exe_dir_inner = exe_path_inner.parent().unwrap_or(std::path::Path::new("."));
+                                        let cf_url_file_inner = exe_dir_inner.join(".cloudflare_url");
+                                        let _ = std::fs::write(&cf_url_file_inner, &url);
+                                        
                                         s3_thread.send(format!("CF_URL:{}", url));
                                         app::awake();
                                     }
