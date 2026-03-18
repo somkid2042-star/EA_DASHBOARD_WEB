@@ -569,9 +569,16 @@ fn main() {
         std::thread::spawn(move || {
             use std::process::Stdio;
             use std::io::{BufRead, BufReader};
+            #[cfg(target_os = "windows")]
+            use std::os::windows::process::CommandExt;
             
             let bin_name = if cfg!(target_os = "windows") { "cloudflared.exe" } else { "cloudflared" };
-            let child = Command::new(bin_name)
+            
+            let mut cmd = Command::new(bin_name);
+            #[cfg(target_os = "windows")]
+            cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+            
+            let child = cmd
                 .arg("tunnel")
                 .arg("--url")
                 .arg(format!("http://localhost:{}", port_c))
