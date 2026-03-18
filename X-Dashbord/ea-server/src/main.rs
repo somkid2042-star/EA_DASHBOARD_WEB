@@ -138,6 +138,9 @@ async fn post_stats(
     }
     current_data["_connected"] = json!(true);
 
+    // DEBUG LOG
+    println!("DEBUG: Received post_stats ea_settings: {:?}", payload.get("ea_settings"));
+
     if let (Value::Object(ref mut current_obj), Value::Object(payload_obj)) = (&mut current_data, &payload) {
         for (k, v) in payload_obj {
             current_obj.insert(k.clone(), v.clone());
@@ -218,7 +221,7 @@ async fn post_update_settings(State(state): State<Arc<AppState>>, Json(payload):
 }
 
 async fn preload_settings(preloaded_state: Arc<Mutex<HashMap<String, Value>>>, logs: Arc<Mutex<Vec<String>>>) {
-    let url = "https://xnwyrleniqxdxomjsopw.supabase.co/rest/v1/ea_settings_master?select=*&limit=10";
+    let url = "https://xnwyrleniqxdxomjsopw.supabase.co/rest/v1/ea_settings_master?select=*&limit=1000";
     let key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhud3lybGVuaXF4ZHhvbWpzb3B3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMTQ3MzMsImV4cCI6MjA4ODc5MDczM30.tx5gR29FfBLsuYCWUDEJy2QqIfDrtL5xG6ZLtXEYZTA";
     let client = reqwest::Client::new();
     match client.get(url).header("apikey", key).header("Authorization", format!("Bearer {}", key)).send().await {

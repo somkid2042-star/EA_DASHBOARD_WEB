@@ -1458,7 +1458,15 @@
                 if (sym.includes('XAU')) newStrategy = 'XAU_TREND';
                 else if (sym.includes('BTC')) newStrategy = 'BTC_MOMENTUM';
 
-                if (firstLoad || newStrategy !== currentStrategy) {
+                let shouldRenderSettings = firstLoad || newStrategy !== currentStrategy;
+                if (!shouldRenderSettings && data.ea_settings && Object.keys(data.ea_settings).length > 0) {
+                    const startLotInput = document.getElementById('set_start_lot') || document.getElementById('set_xau_rsi_period') || document.getElementById('set_btc_lot_size');
+                    if (startLotInput && startLotInput.value === '') {
+                        shouldRenderSettings = true;
+                    }
+                }
+
+                if (shouldRenderSettings) {
                     currentStrategy = newStrategy;
                     localStorage.setItem('ea_last_strategy', currentStrategy);
                     renderSettingsForm(newStrategy, data.ea_settings || {});
