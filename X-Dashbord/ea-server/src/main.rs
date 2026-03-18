@@ -500,16 +500,26 @@ fn main() {
         };
         
         if is_installed {
+            let exe_path = std::env::current_exe().unwrap_or_else(|_| std::path::PathBuf::from("X-Server.exe"));
+            let exe_dir = exe_path.parent().unwrap_or(std::path::Path::new("."));
+            let cf_url_file = exe_dir.join(".cloudflare_url");
+            let log_file_path = exe_dir.join("cloudflared.log");
+
+            // Migration from legacy versions: if no log file exists but process is running, it's a zombie from old piped version
+            if !log_file_path.exists() {
+                #[cfg(target_os = "windows")]
+                {
+                    use std::os::windows::process::CommandExt;
+                    let _ = std::process::Command::new("taskkill").args(&["/F", "/IM", "cloudflared.exe", "/T"]).creation_flags(0x08000000).output();
+                }
+            }
+
             let mut is_running = if cfg!(target_os = "windows") {
                 use std::os::windows::process::CommandExt;
                 if let Ok(out) = std::process::Command::new("tasklist").args(&["/FI", "IMAGENAME eq cloudflared.exe", "/NH"]).creation_flags(0x08000000).output() {
                     String::from_utf8_lossy(&out.stdout).contains("cloudflared.exe")
                 } else { false }
             } else { false };
-
-            let exe_path = std::env::current_exe().unwrap_or_else(|_| std::path::PathBuf::from("X-Server.exe"));
-            let exe_dir = exe_path.parent().unwrap_or(std::path::Path::new("."));
-            let cf_url_file = exe_dir.join(".cloudflare_url");
 
             if is_running {
                 let mut has_valid_url = false;
