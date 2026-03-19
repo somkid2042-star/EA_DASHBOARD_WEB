@@ -481,26 +481,68 @@ fn main() {
     let app_state_tokio = app_state.clone();
     let msg_sender_tokio = msg_sender.clone();
     
-    // Check if port is available before starting Axum
+    // Kill any old x-server processes and free port 3000
     #[cfg(target_os = "windows")]
     {
         use std::os::windows::process::CommandExt;
-        if let Ok(output) = std::process::Command::new("netstat").args(&["-ano"]).creation_flags(0x08000000).output() {
+        let my_pid = std::process::id();
+
+        // Step 1: Kill any other x-server.exe processes (excluding ourself)
+        if let Ok(output) = std::process::Command::new("tasklist")
+            .args(&["/FI", "IMAGENAME eq x-server.exe", "/NH", "/FO", "CSV"])
+            .creation_flags(0x08000000).output()
+        {
             let stdout = String::from_utf8_lossy(&output.stdout);
             for line in stdout.lines() {
-                if line.contains(":3000") && line.contains("LISTENING") {
-                    let parts: Vec<&str> = line.split_whitespace().collect();
-                    if parts.len() >= 5 {
-                        let pid = parts[4];
-                        let _ = std::process::Command::new("taskkill")
-                            .args(&["/F", "/PID", pid])
-                            .creation_flags(0x08000000)
-                            .output();
+                // CSV format: "x-server.exe","1234","Console","1","12,345 K"
+                let fields: Vec<&str> = line.split(',').collect();
+                if fields.len() >= 2 {
+                    let pid_str = fields[1].trim().trim_matches('"');
+                    if let Ok(pid) = pid_str.parse::<u32>() {
+                        if pid != my_pid {
+                            app_state.log(format!("Killing old process PID {}", pid));
+                            let _ = std::process::Command::new("taskkill")
+                                .args(&["/F", "/PID", &pid.to_string()])
+                                .creation_flags(0x08000000)
+                                .output();
+                        }
                     }
                 }
             }
         }
-        std::thread::sleep(std::time::Duration::from_millis(800)); // wait for OS to free the port
+
+        // Step 2: Kill anything listening on port 3000
+        for _attempt in 0..3 {
+            let mut found = false;
+            if let Ok(output) = std::process::Command::new("netstat")
+                .args(&["-ano", "-p", "TCP"])
+                .creation_flags(0x08000000).output()
+            {
+                let stdout = String::from_utf8_lossy(&output.stdout);
+                for line in stdout.lines() {
+                    // Match exact :3000 (followed by space) to avoid matching :30000
+                    if (line.contains(":3000 ") || line.ends_with(":3000")) && line.contains("LISTENING") {
+                        let parts: Vec<&str> = line.split_whitespace().collect();
+                        if let Some(pid_str) = parts.last() {
+                            if let Ok(pid) = pid_str.parse::<u32>() {
+                                if pid != my_pid && pid != 0 {
+                                    app_state.log(format!("Killing port 3000 holder PID {}", pid));
+                                    let _ = std::process::Command::new("taskkill")
+                                        .args(&["/F", "/PID", &pid.to_string()])
+                                        .creation_flags(0x08000000)
+                                        .output();
+                                    found = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if !found { break; }
+            std::thread::sleep(std::time::Duration::from_millis(500));
+        }
+
+        std::thread::sleep(std::time::Duration::from_millis(1000)); // wait for OS to release port
     }
 
     let port_status = match std::net::TcpListener::bind(format!("0.0.0.0:{}", port)) {
