@@ -141,7 +141,7 @@ async fn post_stats(
     let connected = current_data.get("_connected").and_then(|v| v.as_bool()).unwrap_or(false);
     if !connected {
         let preload = state.preloaded_settings.lock().unwrap();
-        if let Some(settings) = preload.get(&account_id) {
+        if let Some(settings) = preload.get(&inst_key) {
             current_data["ea_settings"] = settings.clone();
         }
     }
@@ -211,12 +211,14 @@ async fn post_update_settings(State(state): State<Arc<AppState>>, Json(payload):
 
         let settings_clone = settings.clone();
         let acc_clone = account_id.clone();
+        let sym_clone = symbol.clone();
         tokio::spawn(async move {
             let url = "https://xnwyrleniqxdxomjsopw.supabase.co/rest/v1/ea_settings_master";
             let key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhud3lybGVuaXF4ZHhvbWpzb3B3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMTQ3MzMsImV4cCI6MjA4ODc5MDczM30.tx5gR29FfBLsuYCWUDEJy2QqIfDrtL5xG6ZLtXEYZTA";
             let client = reqwest::Client::new();
             let mut row = settings_clone;
             row["account_id"] = json!(acc_clone);
+            row["symbol"] = json!(sym_clone);
             let _ = client.post(url)
                 .header("apikey", key)
                 .header("Authorization", format!("Bearer {}", key))
@@ -239,7 +241,9 @@ async fn preload_settings(preloaded_state: Arc<Mutex<HashMap<String, Value>>>, l
                 if let Ok(mut map) = preloaded_state.lock() {
                     for row in rows {
                         let acc_id = row.get("account_id").and_then(|v| v.as_str()).unwrap_or("default").to_string();
-                        map.insert(acc_id, row);
+                        let sym = row.get("symbol").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                        let key = format!("{}:{}", acc_id, sym);
+                        map.insert(key, row);
                     }
                     if let Ok(mut l) = logs.lock() {
                         l.push(format!("[{}] ✅ Supabase: Loaded {} settings", chrono::Local::now().format("%H:%M:%S"), map.len()));
