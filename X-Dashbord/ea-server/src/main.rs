@@ -144,6 +144,7 @@ async fn post_stats(
         let preload = state.preloaded_settings.lock().unwrap();
         if let Some(settings) = preload.get(&inst_key) {
             current_data["ea_settings"] = settings.clone();
+            current_data["_web_saved_settings"] = settings.clone();
         }
     }
     current_data["_connected"] = json!(true);
@@ -151,10 +152,18 @@ async fn post_stats(
     // DEBUG LOG
     println!("DEBUG: Received post_stats ea_settings: {:?}", payload.get("ea_settings"));
 
+    // Preserve web-saved ea_settings — don't let EA heartbeat overwrite them
+    let saved_ea_settings = current_data.get("_web_saved_settings").cloned();
+
     if let (Value::Object(ref mut current_obj), Value::Object(payload_obj)) = (&mut current_data, &payload) {
         for (k, v) in payload_obj {
             current_obj.insert(k.clone(), v.clone());
         }
+    }
+
+    // If web-saved settings exist, use those instead of EA's reported settings
+    if let Some(web_settings) = saved_ea_settings {
+        current_data["ea_settings"] = web_settings;
     }
 
     data_map.insert(inst_key.clone(), current_data);
@@ -207,8 +216,17 @@ async fn post_update_settings(State(state): State<Arc<AppState>>, Json(payload):
     let inst_key = format!("{}:{}", account_id, symbol);
     if let Some(settings) = payload.get("settings") {
         state.log(format!("Settings updated for {}", inst_key));
-        state.instance_commands.lock().unwrap().entry(inst_key).or_default()
+        state.instance_commands.lock().unwrap().entry(inst_key.clone()).or_default()
             .push(json!({ "action": "update_settings", "settings": settings.clone() }));
+
+        // Immediately update in-memory instance_data so the web frontend sees the change
+        {
+            let mut data_map = state.instance_data.lock().unwrap();
+            if let Some(instance) = data_map.get_mut(&inst_key) {
+                instance["ea_settings"] = settings.clone();
+                instance["_web_saved_settings"] = settings.clone();
+            }
+        }
 
         let settings_clone = settings.clone();
         let acc_clone = account_id.clone();
