@@ -30,7 +30,12 @@ pub struct AppState {
     instance_commands: Arc<Mutex<HashMap<String, Vec<Value>>>>,
     preloaded_settings: Arc<Mutex<HashMap<String, Value>>>,
     logs: Arc<Mutex<Vec<String>>>,
+    push_subscriptions: Arc<Mutex<Vec<Value>>>,
 }
+
+// VAPID Keys for Web Push
+const VAPID_PUBLIC_KEY: &str = "BMxbodmc2vnGuO_eeaTaszRQULgKgU2wl374ZvBpGy3ifhPebtND8u4jdGuRmjg0AIQVl9H9tuXkc6r-QTBRvwI";
+const VAPID_PRIVATE_KEY: &str = "E4jFmpDWg4_rl151rtPggyrKjOhqRJK01ofSTsVXvaQ";
 
 impl AppState {
     pub fn log(&self, msg: String) {
@@ -49,6 +54,90 @@ async fn get_info() -> Json<Value> {
     Json(json!({
         "version": env!("CARGO_PKG_VERSION")
     }))
+}
+
+async fn get_vapid_public_key() -> impl IntoResponse {
+    (StatusCode::OK, [(header::CONTENT_TYPE, "text/plain")], VAPID_PUBLIC_KEY)
+}
+
+async fn post_subscribe(State(state): State<Arc<AppState>>, Json(payload): Json<Value>) -> Json<Value> {
+    let mut subs = state.push_subscriptions.lock().unwrap();
+    // Avoid duplicates by endpoint
+    let endpoint = payload.get("endpoint").and_then(|v| v.as_str()).unwrap_or("");
+    subs.retain(|s| s.get("endpoint").and_then(|v| v.as_str()).unwrap_or("") != endpoint);
+    subs.push(payload);
+    state.log(format!("📱 Push subscriber registered (total: {})", subs.len()));
+    app::awake();
+    Json(json!({ "success": true }))
+}
+
+async fn post_test_push(State(state): State<Arc<AppState>>) -> Json<Value> {
+    use web_push::*;
+
+    let subs = state.push_subscriptions.lock().unwrap().clone();
+    if subs.is_empty() {
+        return Json(json!({ "success": false, "error": "No subscribers" }));
+    }
+
+    let payload_text = json!({
+        "title": "🔔 EA Dashboard",
+        "body": "ทดสอบแจ้งเตือนสำเร็จ!"
+    }).to_string();
+
+    let mut sent = 0;
+    for sub in &subs {
+        let endpoint = match sub.get("endpoint").and_then(|v| v.as_str()) {
+            Some(e) => e,
+            None => continue,
+        };
+        let keys = match sub.get("keys") {
+            Some(k) => k,
+            None => continue,
+        };
+        let p256dh = keys.get("p256dh").and_then(|v| v.as_str()).unwrap_or("");
+        let auth = keys.get("auth").and_then(|v| v.as_str()).unwrap_or("");
+
+        let subscription_info = SubscriptionInfo::new(endpoint, p256dh, auth);
+
+        let sig_builder = match VapidSignatureBuilder::from_base64(
+            VAPID_PRIVATE_KEY,
+            web_push::URL_SAFE_NO_PAD,
+            &subscription_info,
+        ) {
+            Ok(b) => b.build(),
+            Err(e) => {
+                state.log(format!("❌ VAPID build error: {:?}", e));
+                continue;
+            }
+        };
+
+        let sig = match sig_builder {
+            Ok(s) => s,
+            Err(e) => {
+                state.log(format!("❌ VAPID sign error: {:?}", e));
+                continue;
+            }
+        };
+
+        let mut builder = WebPushMessageBuilder::new(&subscription_info);
+        builder.set_payload(ContentEncoding::Aes128Gcm, payload_text.as_bytes());
+        builder.set_vapid_signature(sig);
+
+        match builder.build() {
+            Ok(message) => {
+                let client = IsahcWebPushClient::new().unwrap();
+                match client.send(message).await {
+                    Ok(_) => sent += 1,
+                    Err(e) => state.log(format!("❌ Push send error: {:?}", e)),
+                }
+            }
+            Err(e) => state.log(format!("❌ Push build error: {:?}", e)),
+        }
+    }
+
+    state.log(format!("📤 Test push sent to {}/{} subscribers", sent, subs.len()));
+    app::awake();
+    Json(json!({ "success": true, "sent": sent }))
 }
 
 // Handler for embedded static files
@@ -458,6 +547,7 @@ fn main() {
         instance_commands: Arc::new(Mutex::new(HashMap::new())),
         preloaded_settings: Arc::new(Mutex::new(HashMap::new())),
         logs: Arc::new(Mutex::new(vec![])),
+        push_subscriptions: Arc::new(Mutex::new(vec![])),
     });
 
     let port = 3000u16;
@@ -554,6 +644,9 @@ fn main() {
                     .route("/api/close-order", post(post_close_order))
                     .route("/api/open-multiplier", post(post_open_multiplier))
                     .route("/api/update-settings", post(post_update_settings))
+                    .route("/api/vapid-public-key", get(get_vapid_public_key))
+                    .route("/api/subscribe", post(post_subscribe))
+                    .route("/api/test-push", post(post_test_push))
                     .fallback(serve_embedded_file)
                     .layer(cors)
                     .with_state(server_state);
