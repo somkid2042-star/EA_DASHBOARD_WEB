@@ -16,7 +16,7 @@ use mime_guess::from_path;
 
 use fltk::{
     app, enums::{Color, Font, FrameType, Align},
-    frame::Frame, group::{Group, Pack}, prelude::*, window::DoubleWindow,
+    frame::Frame, group::Pack, prelude::*, window::DoubleWindow,
     text::{TextDisplay, TextBuffer}, image::JpegImage,
 };
 
@@ -101,7 +101,6 @@ async fn post_test_push(State(state): State<Arc<AppState>>) -> Json<Value> {
 
         let sig_builder = match VapidSignatureBuilder::from_base64(
             VAPID_PRIVATE_KEY,
-            web_push::URL_SAFE_NO_PAD,
             &subscription_info,
         ) {
             Ok(b) => b.build(),
