@@ -18,7 +18,6 @@ use fltk::{
     app, enums::{Color, Font, FrameType, Align},
     frame::Frame, group::{Group, Pack}, prelude::*, window::DoubleWindow,
     text::{TextDisplay, TextBuffer}, image::JpegImage,
-    misc::Progress,
 };
 
 // Embed the entire www/ folder content into the .exe
@@ -427,19 +426,14 @@ async fn check_for_updates(app_state: Arc<AppState>, ui_sender: fltk::app::Sende
     let bat_path = exe_dir.join("update.bat");
     let _ = std::fs::write(&bat_path, bat_content);
 
-    app_state.log("✅ Update ready! Restarting automatically...".to_string());
+    app_state.log("✅ Update ready! Shutting down server...".to_string());
     ui_sender.send("UPDATE_READY".to_string());
     app::awake();
 
-    std::thread::sleep(std::time::Duration::from_millis(1000));
-
-    use std::os::windows::process::CommandExt;
-    let _ = std::process::Command::new("cmd")
-        .args(&["/C", bat_path.to_str().unwrap()])
-        .creation_flags(0x08000000) // CREATE_NO_WINDOW
-        .spawn();
-
-    std::process::exit(0);
+    // Wait a moment for UI to update, then signal main thread to do graceful shutdown
+    std::thread::sleep(std::time::Duration::from_millis(500));
+    ui_sender.send(format!("UPDATE_SHUTDOWN:{}", bat_path.to_str().unwrap()));
+    app::awake();
 }
 
 #[cfg(not(target_os = "windows"))]
@@ -594,35 +588,6 @@ fn main() {
     let mut pack = Pack::default().with_size(610, 500).with_pos(20, 15);
     pack.set_spacing(15);
 
-    // Update Progress Panel (hidden by default)
-    let mut update_group = Group::default().with_size(610, 60);
-    update_group.set_frame(FrameType::FlatBox);
-    update_group.set_color(Color::from_hex(0x1a3a1a));
-    update_group.hide();
-
-    let mut update_label = Frame::default()
-        .with_size(580, 20)
-        .with_pos(update_group.x() + 15, update_group.y() + 8)
-        .with_label("🔄 Checking for updates...");
-    update_label.set_label_font(Font::HelveticaBold);
-    update_label.set_label_size(13);
-    update_label.set_label_color(ACCENT);
-    update_label.set_align(Align::Left | Align::Inside);
-
-    let mut update_progress = Progress::default()
-        .with_size(580, 18)
-        .with_pos(update_group.x() + 15, update_group.y() + 32);
-    update_progress.set_minimum(0.0);
-    update_progress.set_maximum(100.0);
-    update_progress.set_value(0.0);
-    update_progress.set_color(Color::from_hex(0x333333));
-    update_progress.set_selection_color(ACCENT);
-    update_progress.set_frame(FrameType::FlatBox);
-    update_progress.set_label_size(11);
-    update_progress.set_label_color(TEXT_COLOR);
-
-    update_group.end();
-
     // MT5 Connections Area
     let mut mt5_title = Frame::default().with_size(610, 25).with_label("📊 Connected MT5 Instances");
     mt5_title.set_label_font(Font::HelveticaBold);
@@ -684,37 +649,47 @@ fn main() {
 
                 msg if msg.starts_with("UPDATE_FOUND:") => {
                     let ver = msg.strip_prefix("UPDATE_FOUND:").unwrap();
-                    update_label.set_label(&format!("🔄 กำลังดาวน์โหลด v{}...", ver));
-                    update_progress.set_value(0.0);
-                    update_progress.set_label("0%");
-                    update_group.show();
+                    status_bar.set_label(&format!("🔄 กำลังดาวน์โหลด v{}...", ver));
+                    status_bar.set_label_color(ACCENT);
                     win.set_label(&format!("X-Server {} → v{}", env!("CARGO_PKG_VERSION"), ver));
                 }
                 msg if msg.starts_with("UPDATE_PROGRESS:") => {
                     if let Ok(pct) = msg.strip_prefix("UPDATE_PROGRESS:").unwrap().parse::<f64>() {
-                        update_progress.set_value(pct);
-                        update_progress.set_label(&format!("{}%", pct as u32));
+                        let pct_int = pct as u32;
+                        status_bar.set_label(&format!("⬇️ ดาวน์โหลด {}%", pct_int));
                         if pct >= 100.0 {
-                            update_label.set_label("📦 ดาวน์โหลดเสร็จ! กำลังติดตั้ง...");
+                            status_bar.set_label("📦 ดาวน์โหลดเสร็จ! กำลังติดตั้ง...");
                         }
                     }
                 }
                 "UPDATE_STARTING" => {
-                    update_label.set_label("🔄 กำลังตรวจสอบเวอร์ชั่น...");
-                    update_group.show();
-                    win.set_label(&format!("X-Server {} (Updating...)", env!("CARGO_PKG_VERSION")));
+                    status_bar.set_label("🔄 กำลังตรวจสอบเวอร์ชั่น...");
+                    status_bar.set_label_color(Color::Yellow);
                 }
                 "UPDATE_READY" => {
-                    update_label.set_label("✅ อัพเดทเสร็จ! กำลังรีสตาร์ท...");
-                    update_progress.set_value(100.0);
-                    update_progress.set_label("100%");
-                    update_progress.set_selection_color(Color::from_hex(0x34C759));
+                    status_bar.set_label("✅ อัพเดทเสร็จ! กำลังปิดเซิร์ฟเวอร์...");
+                    status_bar.set_label_color(Color::from_hex(0x34C759));
                     win.set_label(&format!("X-Server {} (Restarting...)", env!("CARGO_PKG_VERSION")));
                 }
+                msg if msg.starts_with("UPDATE_SHUTDOWN:") => {
+                    let bat = msg.strip_prefix("UPDATE_SHUTDOWN:").unwrap().to_string();
+                    // Drop tokio runtime to release port 3000
+                    drop(rt);
+                    std::thread::sleep(std::time::Duration::from_millis(500));
+                    // Spawn the update batch file
+                    #[cfg(target_os = "windows")]
+                    {
+                        use std::os::windows::process::CommandExt;
+                        let _ = std::process::Command::new("cmd")
+                            .args(&["/C", &bat])
+                            .creation_flags(0x08000000)
+                            .spawn();
+                    }
+                    std::process::exit(0);
+                }
                 "UPDATE_FAILED" => {
-                    update_label.set_label("❌ อัพเดทล้มเหลว");
-                    update_label.set_label_color(Color::Red);
-                    update_progress.set_selection_color(Color::Red);
+                    status_bar.set_label("❌ อัพเดทล้มเหลว");
+                    status_bar.set_label_color(Color::Red);
                     win.set_label(&format!("X-Server {} (Update Failed)", env!("CARGO_PKG_VERSION")));
                 }
                 _ => {}
