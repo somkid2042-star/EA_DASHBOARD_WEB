@@ -15,12 +15,11 @@ use rust_embed::RustEmbed;
 use mime_guess::from_path;
 
 use fltk::{
-    app, button::Button, enums::{Color, Font, FrameType, Align},
+    app, enums::{Color, Font, FrameType, Align},
     frame::Frame, group::{Group, Pack}, prelude::*, window::DoubleWindow,
     text::{TextDisplay, TextBuffer}, image::JpegImage,
     misc::Progress,
 };
-use std::process::Command;
 
 // Embed the entire www/ folder content into the .exe
 #[derive(RustEmbed)]
@@ -32,7 +31,6 @@ pub struct AppState {
     instance_commands: Arc<Mutex<HashMap<String, Vec<Value>>>>,
     preloaded_settings: Arc<Mutex<HashMap<String, Value>>>,
     logs: Arc<Mutex<Vec<String>>>,
-    pub cloudflare_url: Arc<Mutex<Option<String>>>,
 }
 
 impl AppState {
@@ -48,11 +46,9 @@ impl AppState {
 }
 
 // ---------------- AXUM HANDLERS ----------------
-async fn get_info(State(state): State<Arc<AppState>>) -> Json<Value> {
-    let url = state.cloudflare_url.lock().unwrap().clone();
+async fn get_info() -> Json<Value> {
     Json(json!({
-        "version": env!("CARGO_PKG_VERSION"),
-        "cloudflare_url": url
+        "version": env!("CARGO_PKG_VERSION")
     }))
 }
 
@@ -468,7 +464,6 @@ fn main() {
         instance_commands: Arc::new(Mutex::new(HashMap::new())),
         preloaded_settings: Arc::new(Mutex::new(HashMap::new())),
         logs: Arc::new(Mutex::new(vec![])),
-        cloudflare_url: Arc::new(Mutex::new(None)),
     });
 
     let port = 3000u16;
@@ -599,175 +594,6 @@ fn main() {
     let mut pack = Pack::default().with_size(610, 500).with_pos(20, 15);
     pack.set_spacing(15);
 
-
-    // Cloudflare Tunnel Panel
-    let mut cf_group = Group::default().with_size(610, 90);
-    cf_group.set_frame(FrameType::FlatBox);
-    cf_group.set_color(PANEL_BG);
-
-    let mut cf_label = Frame::default().with_size(150, 25).with_pos(cf_group.x() + 15, cf_group.y() + 15).with_label("Cloudflare Tunnel:");
-    cf_label.set_label_font(Font::HelveticaBold);
-    cf_label.set_label_size(14);
-    cf_label.set_label_color(TEXT_COLOR);
-    cf_label.set_align(Align::Left | Align::Inside);
-
-    let mut cf_status = Frame::default().with_size(140, 25).with_pos(cf_group.x() + 165, cf_group.y() + 15).with_label("Auto-starting...");
-    cf_status.set_label_size(14);
-    cf_status.set_label_color(Color::Yellow);
-    cf_status.set_align(Align::Left | Align::Inside);
-    
-    let mut cf_btn_copy = Button::default().with_size(80, 25).with_pos(cf_group.x() + 505, cf_group.y() + 50).with_label("Copy URL");
-
-    let mut cf_url_lbl = Frame::default().with_size(80, 25).with_pos(cf_group.x() + 15, cf_group.y() + 50).with_label("Public URL:");
-    cf_url_lbl.set_label_size(14);
-    cf_url_lbl.set_label_color(TEXT_COLOR);
-    cf_url_lbl.set_align(Align::Left | Align::Inside);
-
-    let mut cf_url_input = fltk::input::Input::default().with_size(400, 25).with_pos(cf_group.x() + 100, cf_group.y() + 50);
-    cf_url_input.set_color(Color::from_hex(0x1a1a1a));
-    cf_url_input.set_text_color(ACCENT);
-    cf_url_input.set_value("Loading...");
-    cf_url_input.set_readonly(true);
-    
-    let mut cf_url_input_copy = cf_url_input.clone();
-    cf_btn_copy.set_callback(move |_| {
-        let url = cf_url_input_copy.value();
-        if url.contains("trycloudflare.com") {
-            fltk::app::copy(&url);
-        }
-    });
-
-    let s3 = msg_sender.clone();
-    let cf_port = port;
-    let st_app = app_state.clone();
-    
-    // Auto-start Tunnel immediately
-    std::thread::spawn(move || {
-        let is_installed = if cfg!(target_os = "windows") {
-            Command::new("cloudflared.exe").arg("--version").output().is_ok() || Command::new("cloudflared").arg("--version").output().is_ok()
-        } else {
-            Command::new("cloudflared").arg("--version").output().is_ok()
-        };
-        
-        if is_installed {
-            let exe_path = std::env::current_exe().unwrap_or_else(|_| std::path::PathBuf::from("X-Server.exe"));
-            let exe_dir = exe_path.parent().unwrap_or(std::path::Path::new("."));
-            let cf_url_file = exe_dir.join(".cloudflare_url");
-            let log_file_path = exe_dir.join("cloudflared.log");
-
-            // Migration from legacy versions: if no log file exists but process is running, it's a zombie from old piped version
-            if !log_file_path.exists() {
-                #[cfg(target_os = "windows")]
-                {
-                    use std::os::windows::process::CommandExt;
-                    let _ = std::process::Command::new("taskkill").args(&["/F", "/IM", "cloudflared.exe", "/T"]).creation_flags(0x08000000).output();
-                }
-            }
-
-            let mut is_running = if cfg!(target_os = "windows") {
-                use std::os::windows::process::CommandExt;
-                if let Ok(out) = std::process::Command::new("tasklist").args(&["/FI", "IMAGENAME eq cloudflared.exe", "/NH"]).creation_flags(0x08000000).output() {
-                    String::from_utf8_lossy(&out.stdout).contains("cloudflared.exe")
-                } else { false }
-            } else { false };
-
-            if is_running {
-                let mut has_valid_url = false;
-                if let Ok(saved_url) = std::fs::read_to_string(&cf_url_file) {
-                    let s = saved_url.trim();
-                    if s.contains("trycloudflare.com") {
-                        s3.send(format!("CF_URL:{}", s));
-                        has_valid_url = true;
-                    }
-                }
-                
-                if !has_valid_url {
-                    #[cfg(target_os = "windows")]
-                    {
-                        use std::os::windows::process::CommandExt;
-                        let _ = std::process::Command::new("taskkill").args(&["/F", "/IM", "cloudflared.exe", "/T"]).creation_flags(0x08000000).output();
-                    }
-                    is_running = false;
-                }
-            }
-            
-            if !is_running {
-                s3.send("CF_STARTING".to_string());
-                let s3_thread = s3.clone();
-                #[allow(unused_variables)]
-                let _app_state_thread = st_app.clone();
-                std::thread::spawn(move || {
-                    use std::process::Stdio;
-                    use std::io::{BufRead, BufReader};
-                    #[cfg(target_os = "windows")]
-                    use std::os::windows::process::CommandExt;
-                    
-                    let exe_path_inner = std::env::current_exe().unwrap_or_else(|_| std::path::PathBuf::from("X-Server.exe"));
-                    let exe_dir_inner = exe_path_inner.parent().unwrap_or(std::path::Path::new("."));
-                    let log_file_path = exe_dir_inner.join("cloudflared.log");
-                    
-                    let stdout_file = std::fs::File::create(&log_file_path).unwrap();
-                    let stderr_file = stdout_file.try_clone().unwrap();
-
-                    let bin_name = if cfg!(target_os = "windows") { "cloudflared.exe" } else { "cloudflared" };
-                    
-                    let mut cmd = std::process::Command::new(bin_name);
-                    #[cfg(target_os = "windows")]
-                    cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
-                    
-                    let child = cmd
-                        .arg("tunnel")
-                        .arg("--url")
-                        .arg(format!("http://localhost:{}", cf_port))
-                        .stdout(Stdio::from(stdout_file))
-                        .stderr(Stdio::from(stderr_file))
-                        .spawn();
-                        
-                    if let Ok(_process) = child {
-                        let mut found = false;
-                        for _ in 0..120 { // Try up to 60 seconds
-                            std::thread::sleep(std::time::Duration::from_millis(500));
-                            if let Ok(content) = std::fs::read_to_string(&log_file_path) {
-                                for line in content.lines() {
-                                    if line.contains("trycloudflare.com") {
-                                        if let Some(idx) = line.find("https://") {
-                                            let mut ends = idx;
-                                            while ends < line.len() && &line[ends..ends+1] != " " && &line[ends..ends+1] != "|" && &line[ends..ends+1] != "\"" {
-                                                ends += 1;
-                                            }
-                                            let url = line[idx..ends].to_string();
-                                            
-                                            let cf_url_file_inner = exe_dir_inner.join(".cloudflare_url");
-                                            let _ = std::fs::write(&cf_url_file_inner, &url);
-                                            
-                                            s3_thread.send(format!("CF_URL:{}", url));
-                                            app::awake();
-                                            found = true;
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                            if found { break; }
-                        }
-                        if !found {
-                            s3_thread.send("CF_START_ERROR".to_string());
-                            app::awake();
-                        }
-                    } else {
-                        s3_thread.send("CF_START_ERROR".to_string());
-                        app::awake();
-                    }
-                });
-            }
-        } else {
-            s3.send("CF_NOT_FOUND".to_string());
-        }
-        app::awake();
-    });
-
-    cf_group.end();
-
     // Update Progress Panel (hidden by default)
     let mut update_group = Group::default().with_size(610, 60);
     update_group.set_frame(FrameType::FlatBox);
@@ -855,32 +681,7 @@ fn main() {
     while app.wait() {
         if let Some(msg) = msg_receiver.recv() {
             match msg.as_str() {
-                "CF_INSTALLED" => {
-                    cf_status.set_label("Starting...");
-                    cf_status.set_label_color(Color::Yellow);
-                }
-                "CF_NOT_FOUND" => {
-                    cf_status.set_label("Not Found - Please install cloudflared.");
-                    cf_status.set_label_color(Color::Red);
-                    cf_url_input.set_value("cloudflared missing.");
-                }
-                "CF_STARTING" => {
-                    cf_status.set_label("Starting...");
-                    cf_status.set_label_color(Color::Yellow);
-                    cf_url_input.set_value("Waiting for Cloudflare URL...");
-                }
-                "CF_START_ERROR" => {
-                    cf_status.set_label("Start Error");
-                    cf_status.set_label_color(Color::Red);
-                    cf_url_input.set_value("Failed to run cloudflared.");
-                }
-                msg if msg.starts_with("CF_URL:") => {
-                    cf_status.set_label("Online");
-                    cf_status.set_label_color(ACCENT);
-                    let url = msg.strip_prefix("CF_URL:").unwrap().to_string();
-                    cf_url_input.set_value(&url);
-                    *app_state.cloudflare_url.lock().unwrap() = Some(url);
-                }
+
                 msg if msg.starts_with("UPDATE_FOUND:") => {
                     let ver = msg.strip_prefix("UPDATE_FOUND:").unwrap();
                     update_label.set_label(&format!("🔄 กำลังดาวน์โหลด v{}...", ver));
