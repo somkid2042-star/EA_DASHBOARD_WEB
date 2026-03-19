@@ -1,6 +1,6 @@
 [package]
 name = "x-server"
-version = "1.1.0"
+version = "1.1.1"
 edition = "2021"
 
 [dependencies]
@@ -9,7 +9,8 @@ serde = { version = "1.0", features = ["derive"] }
 tokio = { version = "1", features = ["full"] }
 axum = "0.7"
 tower-http = { version = "0.6", features = ["cors", "fs"] }
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.12", features = ["json", "stream"] }
+futures-util = "0.3"
 open = "5"
 rust-embed = "8.11.0"
 mime_guess = "2.0.5"

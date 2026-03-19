@@ -18,6 +18,7 @@ use fltk::{
     app, button::Button, enums::{Color, Font, FrameType, Align},
     frame::Frame, group::{Group, Pack}, prelude::*, window::DoubleWindow,
     text::{TextDisplay, TextBuffer}, image::JpegImage,
+    misc::Progress,
 };
 use std::process::Command;
 
@@ -269,77 +270,162 @@ const ACCENT: Color = Color::from_hex(0x00a86b); // Neon Green
 
 #[cfg(target_os = "windows")]
 async fn check_for_updates(app_state: Arc<AppState>, ui_sender: fltk::app::Sender<String>) {
+    use futures_util::StreamExt;
+
     let current_version = env!("CARGO_PKG_VERSION");
     let url = "https://api.github.com/repos/somkid2042-star/EA_DASHBOARD_WEB/releases/latest";
     let client = reqwest::Client::new();
-    
-    if let Ok(res) = client.get(url).header("User-Agent", "X-Server-Updater").send().await {
-        if let Ok(release) = res.json::<serde_json::Value>().await {
-            if let Some(tag) = release.get("tag_name").and_then(|t| t.as_str()) {
-                let latest_version = tag.strip_prefix("X-Server-v").or_else(|| tag.strip_prefix("v")).unwrap_or(tag);
-                if latest_version != current_version {
-                    app_state.log(format!("🔄 New version {} found (Current: {}). Downloading...", latest_version, current_version));
-                    ui_sender.send("UPDATE_STARTING".to_string());
-                    app::awake();
 
-                    if let Some(assets) = release.get("assets").and_then(|a| a.as_array()) {
-                        let mut download_url = None;
-                        for asset in assets {
-                            if let Some(name) = asset.get("name").and_then(|n| n.as_str()) {
-                                if name.ends_with(".exe") && name.contains("X-Server") {
-                                    download_url = asset.get("browser_download_url").and_then(|u| u.as_str());
-                                    break;
-                                }
-                            }
-                        }
+    let res = match client.get(url).header("User-Agent", "X-Server-Updater").send().await {
+        Ok(r) => r,
+        Err(_) => {
+            app_state.log("ℹ️ Could not check for updates.".to_string());
+            app::awake();
+            return;
+        }
+    };
 
-                        if let Some(url) = download_url {
-                            if let Ok(resp) = client.get(url).header("User-Agent", "X-Server-Updater").send().await {
-                                if let Ok(bytes) = resp.bytes().await {
-                                    let exe_path = std::env::current_exe().unwrap_or_else(|_| std::path::PathBuf::from("X-Server.exe"));
-                                    let exe_name = exe_path.file_name().unwrap().to_str().unwrap();
-                                    
-                                    let exe_dir = exe_path.parent().unwrap_or(std::path::Path::new("."));
-                                    let update_exe = exe_dir.join(format!("{}_update.exe", exe_name));
-                                    
-                                    let _ = std::fs::write(&update_exe, &bytes);
+    let release = match res.json::<serde_json::Value>().await {
+        Ok(r) => r,
+        Err(_) => return,
+    };
 
-                                    let my_pid = std::process::id();
-                                    let bat_content = format!(
-                                        "@echo off\n\
-                                        taskkill /F /PID {} > NUL 2>&1\n\
-                                        timeout /t 1 /nobreak > NUL\n\
-                                        del \"{}\"\n\
-                                        rename \"{}\" \"{}\"\n\
-                                        start \"\" \"{}\"\n\
-                                        del \"%~f0\"",
-                                        my_pid, exe_path.display(), update_exe.display(), exe_name, exe_path.display()
-                                    );
-                                    let bat_path = exe_dir.join("update.bat");
-                                    let _ = std::fs::write(&bat_path, bat_content);
+    let tag = match release.get("tag_name").and_then(|t| t.as_str()) {
+        Some(t) => t,
+        None => return,
+    };
 
-                                    app_state.log("✅ Update ready! Restarting automatically...".to_string());
-                                    ui_sender.send("UPDATE_READY".to_string());
-                                    app::awake();
-                                    
-                                    std::thread::sleep(std::time::Duration::from_millis(500));
-                                    let _ = std::process::Command::new("cmd")
-                                        .arg("/C")
-                                        .arg(exe_dir.join("update.bat").to_str().unwrap())
-                                        .spawn();
-                                        
-                                    std::process::exit(0);
-                                }
-                            }
-                        }
-                    }
-                    app_state.log("❌ Update failed: Could not download the asset.".to_string());
-                    ui_sender.send("UPDATE_FAILED".to_string());
-                    app::awake();
-                }
+    let latest_version = tag.strip_prefix("X-Server-v")
+        .or_else(|| tag.strip_prefix("v"))
+        .unwrap_or(tag);
+
+    if latest_version == current_version {
+        app_state.log(format!("✅ Already on latest version v{}", current_version));
+        app::awake();
+        return;
+    }
+
+    app_state.log(format!("🔄 New version v{} found (Current: v{})", latest_version, current_version));
+    ui_sender.send(format!("UPDATE_FOUND:{}", latest_version));
+    app::awake();
+
+    // Find the .exe asset
+    let assets = match release.get("assets").and_then(|a| a.as_array()) {
+        Some(a) => a,
+        None => {
+            app_state.log("❌ No release assets found.".to_string());
+            ui_sender.send("UPDATE_FAILED".to_string());
+            app::awake();
+            return;
+        }
+    };
+
+    let mut download_url = None;
+    let mut total_size: u64 = 0;
+    for asset in assets {
+        if let Some(name) = asset.get("name").and_then(|n| n.as_str()) {
+            if name.ends_with(".exe") && name.contains("X-Server") {
+                download_url = asset.get("browser_download_url").and_then(|u| u.as_str());
+                total_size = asset.get("size").and_then(|s| s.as_u64()).unwrap_or(0);
+                break;
             }
         }
     }
+
+    let download_url = match download_url {
+        Some(u) => u,
+        None => {
+            app_state.log("❌ No .exe asset in release.".to_string());
+            ui_sender.send("UPDATE_FAILED".to_string());
+            app::awake();
+            return;
+        }
+    };
+
+    // Start streaming download with progress
+    let resp = match client.get(download_url).header("User-Agent", "X-Server-Updater").send().await {
+        Ok(r) => r,
+        Err(_) => {
+            app_state.log("❌ Download failed.".to_string());
+            ui_sender.send("UPDATE_FAILED".to_string());
+            app::awake();
+            return;
+        }
+    };
+
+    // Use content-length from response header, fallback to asset size
+    let content_length = resp.content_length().unwrap_or(total_size);
+    let mut downloaded: u64 = 0;
+    let mut file_bytes: Vec<u8> = Vec::with_capacity(content_length as usize);
+    let mut stream = resp.bytes_stream();
+    let mut last_pct: u64 = 0;
+
+    while let Some(chunk_result) = stream.next().await {
+        match chunk_result {
+            Ok(chunk) => {
+                downloaded += chunk.len() as u64;
+                file_bytes.extend_from_slice(&chunk);
+
+                if content_length > 0 {
+                    let pct = (downloaded * 100) / content_length;
+                    if pct != last_pct {
+                        last_pct = pct;
+                        ui_sender.send(format!("UPDATE_PROGRESS:{}", pct));
+                        app::awake();
+                    }
+                }
+            }
+            Err(_) => {
+                app_state.log("❌ Download interrupted.".to_string());
+                ui_sender.send("UPDATE_FAILED".to_string());
+                app::awake();
+                return;
+            }
+        }
+    }
+
+    let size_mb = downloaded as f64 / 1_048_576.0;
+    app_state.log(format!("📦 Downloaded {:.1} MB", size_mb));
+
+    // Write new exe
+    let exe_path = std::env::current_exe().unwrap_or_else(|_| std::path::PathBuf::from("X-Server.exe"));
+    let exe_name = exe_path.file_name().unwrap().to_str().unwrap().to_string();
+    let exe_dir = exe_path.parent().unwrap_or(std::path::Path::new("."));
+    let update_exe = exe_dir.join("X-Server_update.exe");
+
+    if std::fs::write(&update_exe, &file_bytes).is_err() {
+        app_state.log("❌ Failed to write update file.".to_string());
+        ui_sender.send("UPDATE_FAILED".to_string());
+        app::awake();
+        return;
+    }
+
+    // Create batch file for self-replacement (no indentation whitespace!)
+    let my_pid = std::process::id();
+    let bat_content = format!(
+"@echo off\r\ntaskkill /F /PID {} >NUL 2>&1\r\ntimeout /t 2 /nobreak >NUL\r\ndel \"{}\"\r\nmove /Y \"{}\" \"{}\"\r\nstart \"\" \"{}\"\r\ndel \"%~f0\"",
+        my_pid,
+        exe_path.display(),
+        update_exe.display(),
+        exe_path.display(),
+        exe_path.display()
+    );
+    let bat_path = exe_dir.join("update.bat");
+    let _ = std::fs::write(&bat_path, bat_content);
+
+    app_state.log("✅ Update ready! Restarting automatically...".to_string());
+    ui_sender.send("UPDATE_READY".to_string());
+    app::awake();
+
+    std::thread::sleep(std::time::Duration::from_millis(1000));
+
+    use std::os::windows::process::CommandExt;
+    let _ = std::process::Command::new("cmd")
+        .args(&["/C", bat_path.to_str().unwrap()])
+        .creation_flags(0x08000000) // CREATE_NO_WINDOW
+        .spawn();
+
+    std::process::exit(0);
 }
 
 #[cfg(not(target_os = "windows"))]
@@ -622,6 +708,35 @@ fn main() {
 
     cf_group.end();
 
+    // Update Progress Panel (hidden by default)
+    let mut update_group = Group::default().with_size(610, 60);
+    update_group.set_frame(FrameType::FlatBox);
+    update_group.set_color(Color::from_hex(0x1a3a1a));
+    update_group.hide();
+
+    let mut update_label = Frame::default()
+        .with_size(580, 20)
+        .with_pos(update_group.x() + 15, update_group.y() + 8)
+        .with_label("🔄 Checking for updates...");
+    update_label.set_label_font(Font::HelveticaBold);
+    update_label.set_label_size(13);
+    update_label.set_label_color(ACCENT);
+    update_label.set_align(Align::Left | Align::Inside);
+
+    let mut update_progress = Progress::default()
+        .with_size(580, 18)
+        .with_pos(update_group.x() + 15, update_group.y() + 32);
+    update_progress.set_minimum(0.0);
+    update_progress.set_maximum(100.0);
+    update_progress.set_value(0.0);
+    update_progress.set_color(Color::from_hex(0x333333));
+    update_progress.set_selection_color(ACCENT);
+    update_progress.set_frame(FrameType::FlatBox);
+    update_progress.set_label_size(11);
+    update_progress.set_label_color(TEXT_COLOR);
+
+    update_group.end();
+
     // MT5 Connections Area
     let mut mt5_title = Frame::default().with_size(610, 25).with_label("📊 Connected MT5 Instances");
     mt5_title.set_label_font(Font::HelveticaBold);
@@ -706,13 +821,39 @@ fn main() {
                     cf_url_input.set_value(&url);
                     *app_state.cloudflare_url.lock().unwrap() = Some(url);
                 }
+                msg if msg.starts_with("UPDATE_FOUND:") => {
+                    let ver = msg.strip_prefix("UPDATE_FOUND:").unwrap();
+                    update_label.set_label(&format!("🔄 กำลังดาวน์โหลด v{}...", ver));
+                    update_progress.set_value(0.0);
+                    update_progress.set_label("0%");
+                    update_group.show();
+                    win.set_label(&format!("X-Server {} → v{}", env!("CARGO_PKG_VERSION"), ver));
+                }
+                msg if msg.starts_with("UPDATE_PROGRESS:") => {
+                    if let Ok(pct) = msg.strip_prefix("UPDATE_PROGRESS:").unwrap().parse::<f64>() {
+                        update_progress.set_value(pct);
+                        update_progress.set_label(&format!("{}%", pct as u32));
+                        if pct >= 100.0 {
+                            update_label.set_label("📦 ดาวน์โหลดเสร็จ! กำลังติดตั้ง...");
+                        }
+                    }
+                }
                 "UPDATE_STARTING" => {
+                    update_label.set_label("🔄 กำลังตรวจสอบเวอร์ชั่น...");
+                    update_group.show();
                     win.set_label(&format!("X-Server {} (Updating...)", env!("CARGO_PKG_VERSION")));
                 }
                 "UPDATE_READY" => {
+                    update_label.set_label("✅ อัพเดทเสร็จ! กำลังรีสตาร์ท...");
+                    update_progress.set_value(100.0);
+                    update_progress.set_label("100%");
+                    update_progress.set_selection_color(Color::from_hex(0x34C759));
                     win.set_label(&format!("X-Server {} (Restarting...)", env!("CARGO_PKG_VERSION")));
                 }
                 "UPDATE_FAILED" => {
+                    update_label.set_label("❌ อัพเดทล้มเหลว");
+                    update_label.set_label_color(Color::Red);
+                    update_progress.set_selection_color(Color::Red);
                     win.set_label(&format!("X-Server {} (Update Failed)", env!("CARGO_PKG_VERSION")));
                 }
                 _ => {}
