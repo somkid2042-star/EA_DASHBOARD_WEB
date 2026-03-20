@@ -17,15 +17,17 @@ enum ENUM_TP_MODE
    TP_MODE_SINGLE  // TP แยกตามแต่ละออเดอร์
 };
 
-// Version & Magic Number
-string g_EAVersion = "1.3.3";
-string g_EAName    = "X_Grid";
+// Magic Number
 long g_MagicNumber = 20261111;
 
 //+------------------------------------------------------------------+
 //| ===== Global Variables =====                                       |
 //+------------------------------------------------------------------+
 CTrade   g_trade;
+
+// Version
+string g_EAVersion = "1.3.3";
+string g_EAName    = "X_Grid";
 int      g_handleEmaFast = INVALID_HANDLE;
 int      g_handleEmaSlow = INVALID_HANDLE;
 int      g_handleATR     = INVALID_HANDLE;

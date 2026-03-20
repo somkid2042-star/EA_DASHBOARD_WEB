@@ -8,15 +8,17 @@
 
 #include <Trade\Trade.mqh>
 
-// Version & Magic Number
-string g_EAVersion = "1.3.3";
-string g_EAName    = "X_XAU";
+// Magic Number
 long g_MagicNumber = 20261111;
 
 //+------------------------------------------------------------------+
 //| ===== Global Variables =====                                       |
 //+------------------------------------------------------------------+
 CTrade   g_trade;
+
+// Version
+string g_EAVersion = "1.3.3";
+string g_EAName    = "X_XAU";
 
 //--- XAU Strategy Variables
 int      g_xauHandleEMA21   = INVALID_HANDLE;
