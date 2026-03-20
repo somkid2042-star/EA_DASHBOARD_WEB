@@ -1,69 +1,54 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>X-Dashboard</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-    
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
     :root {
-      --bg-primary: #0a0a1a;
-      --bg-card: rgba(20, 20, 40, 0.85);
-      --accent: #6c63ff;
-      --accent-glow: rgba(108, 99, 255, 0.3);
-      --success: #00e676;
-      --danger: #ff5252;
-      --warning: #ffab40;
-      --text: #e8e8f0;
-      --text-dim: #8888aa;
-      --border: rgba(108, 99, 255, 0.2);
+      --bg: #1c1c1e;
+      --bg-secondary: #2c2c2e;
+      --bg-tertiary: #3a3a3c;
+      --bg-card: #2c2c2e;
+      --bg-card-hover: #38383a;
+      --accent-blue: #0a84ff;
+      --accent-green: #30d158;
+      --accent-purple: #bf5af2;
+      --accent-orange: #ff9f0a;
+      --text-primary: #ffffff;
+      --text-secondary: #98989d;
+      --text-tertiary: #636366;
+      --separator: rgba(84, 84, 88, 0.36);
+      --fill: rgba(120, 120, 128, 0.2);
     }
 
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: var(--bg-primary);
-      color: var(--text);
+      font-family: -apple-system, 'SF Pro Display', 'SF Pro Text', 'Inter', BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
       height: 100vh;
       overflow: hidden;
       display: flex;
       flex-direction: column;
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* ===== Animated Background ===== */
-    .bg-animation {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      z-index: 0;
-      background: 
-        radial-gradient(ellipse at 20% 50%, rgba(108, 99, 255, 0.08) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 20%, rgba(0, 230, 118, 0.06) 0%, transparent 50%),
-        radial-gradient(ellipse at 50% 80%, rgba(255, 171, 64, 0.05) 0%, transparent 50%);
-    }
-
-    .bg-animation::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: repeating-linear-gradient(
-        0deg, transparent, transparent 49px,
-        rgba(108, 99, 255, 0.03) 49px, rgba(108, 99, 255, 0.03) 50px
-      ),
-      repeating-linear-gradient(
-        90deg, transparent, transparent 49px,
-        rgba(108, 99, 255, 0.03) 49px, rgba(108, 99, 255, 0.03) 50px
-      );
-    }
-
-    /* ===== Title Bar (Drag Region) ===== */
+    /* ===== macOS Window Titlebar ===== */
     .titlebar {
-      height: 38px;
-      background: rgba(10, 10, 26, 0.95);
-      border-bottom: 1px solid var(--border);
+      height: 52px;
+      background: rgba(28, 28, 30, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 0.5px solid var(--separator);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -71,33 +56,45 @@
       position: relative;
       z-index: 100;
       flex-shrink: 0;
+      padding-left: 78px;
     }
 
     .titlebar-title {
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--text-dim);
-      letter-spacing: 0.5px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      letter-spacing: -0.08px;
     }
 
-    .titlebar .status-dot {
-      width: 8px; height: 8px;
+    .titlebar .traffic-lights {
+      position: absolute;
+      left: 20px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .traffic-light {
+      width: 12px;
+      height: 12px;
       border-radius: 50%;
-      margin-right: 6px;
-      display: inline-block;
+      border: 0.5px solid rgba(0, 0, 0, 0.12);
     }
 
-    .titlebar .status-dot.connected { background: var(--success); box-shadow: 0 0 6px var(--success); }
-    .titlebar .status-dot.disconnected { background: var(--danger); box-shadow: 0 0 6px var(--danger); }
-    .titlebar .status-dot.connecting { background: var(--warning); animation: pulse 1s infinite; }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.3; }
+    .traffic-light.red {
+      background: #ff5f57;
     }
 
-    /* ===== Connection Page ===== */
-    #connection-page {
+    .traffic-light.yellow {
+      background: #febc2e;
+    }
+
+    .traffic-light.green {
+      background: #28c840;
+    }
+
+    /* ===== Main Content ===== */
+    #selection-page {
       position: relative;
       z-index: 10;
       flex: 1;
@@ -105,372 +102,301 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 40px;
+      padding: 40px 50px;
+      -webkit-app-region: no-drag;
     }
 
-    .logo {
-      font-size: 48px;
+    .app-icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(180deg, #3a3a3c 0%, #2c2c2e 100%);
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 38px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 0.5px 0 rgba(255, 255, 255, 0.06);
+    }
+
+    .app-title {
+      font-size: 26px;
       font-weight: 700;
-      background: linear-gradient(135deg, #6c63ff, #00e676);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+      margin-bottom: 4px;
     }
 
-    .subtitle {
-      color: var(--text-dim);
-      font-size: 14px;
+    .app-subtitle {
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 400;
       margin-bottom: 40px;
     }
 
-    .connect-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 32px;
-      width: 420px;
-      backdrop-filter: blur(20px);
-      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-    }
-
-    .connect-card h2 {
-      font-size: 18px;
-      font-weight: 600;
-      margin-bottom: 20px;
-      color: var(--text);
-    }
-
-    .input-group {
-      margin-bottom: 16px;
-    }
-
-    .input-group label {
-      display: block;
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--text-dim);
-      margin-bottom: 6px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .input-group input {
-      width: 100%;
-      padding: 12px 16px;
-      background: rgba(0,0,0,0.3);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
-      font-size: 14px;
-      font-family: 'Inter', sans-serif;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    .input-group input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-glow);
-    }
-
-    .input-group input::placeholder {
-      color: var(--text-dim);
-    }
-
-    .quick-urls {
+    /* ===== macOS Cards ===== */
+    .cards-grid {
       display: flex;
-      gap: 8px;
-      margin-bottom: 20px;
-    }
-
-    .quick-url {
-      padding: 6px 12px;
-      background: rgba(108, 99, 255, 0.1);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--accent);
-      font-size: 11px;
-      cursor: pointer;
-      transition: all 0.2s;
-      -webkit-app-region: no-drag;
-    }
-
-    .quick-url:hover {
-      background: rgba(108, 99, 255, 0.2);
-      border-color: var(--accent);
-    }
-
-    .btn-connect {
+      gap: 16px;
       width: 100%;
-      padding: 14px;
-      background: linear-gradient(135deg, #6c63ff, #5a52e0);
-      border: none;
+      max-width: 600px;
+    }
+
+    .nav-card {
+      flex: 1;
+      background: var(--bg-card);
+      border: 0.5px solid var(--separator);
+      border-radius: 12px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .nav-card:hover {
+      background: var(--bg-card-hover);
+      transform: scale(1.02);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .nav-card:active {
+      transform: scale(0.98);
+    }
+
+    .card-icon-wrap {
+      width: 44px;
+      height: 44px;
       border-radius: 10px;
-      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      margin-bottom: 14px;
+    }
+
+    .nav-card.server .card-icon-wrap {
+      background: linear-gradient(135deg, #5e5ce6, #bf5af2);
+    }
+
+    .nav-card.dashboard .card-icon-wrap {
+      background: linear-gradient(135deg, #30d158, #63e6be);
+    }
+
+    .card-title {
       font-size: 15px;
       font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s;
-      font-family: 'Inter', sans-serif;
-      letter-spacing: 0.3px;
-      -webkit-app-region: no-drag;
+      letter-spacing: -0.2px;
+      margin-bottom: 4px;
     }
 
-    .btn-connect:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 20px var(--accent-glow);
+    .card-desc {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin-bottom: 12px;
     }
 
-    .btn-connect:active {
-      transform: translateY(0);
+    .card-url {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      background: var(--fill);
+      border-radius: 5px;
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--text-tertiary);
+      font-family: 'SF Mono', 'Menlo', monospace;
     }
 
-    .btn-connect.connecting {
-      background: linear-gradient(135deg, #ffab40, #ff8f00);
-      pointer-events: none;
+    .card-url .lock {
+      font-size: 9px;
     }
 
-    .error-msg {
-      margin-top: 12px;
-      color: var(--danger);
-      font-size: 13px;
-      text-align: center;
-      display: none;
-    }
-
-    /* ===== Dashboard iFrame ===== */
+    /* ===== Content Frame ===== */
     #dashboard-frame {
       display: none;
       flex: 1;
       width: 100%;
       border: none;
+      background: var(--bg);
     }
 
-    /* ===== Bottom Bar ===== */
-    .bottom-bar {
-      height: 28px;
-      background: rgba(10, 10, 26, 0.95);
-      border-top: 1px solid var(--border);
+    /* ===== macOS Bottom Toolbar ===== */
+    .toolbar {
+      height: 38px;
+      background: rgba(28, 28, 30, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 0.5px solid var(--separator);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 12px;
+      padding: 0 16px;
       font-size: 11px;
-      color: var(--text-dim);
+      color: var(--text-secondary);
       z-index: 100;
       flex-shrink: 0;
+      -webkit-app-region: no-drag;
     }
 
-    .bottom-bar .btn-small {
-      padding: 2px 10px;
-      background: rgba(108, 99, 255, 0.15);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      color: var(--accent);
-      font-size: 10px;
+    .toolbar-btn {
+      padding: 4px 10px;
+      background: var(--fill);
+      border: 0.5px solid var(--separator);
+      border-radius: 5px;
+      color: var(--text-secondary);
+      font-size: 11px;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.15s;
+      font-family: -apple-system, 'SF Pro Text', sans-serif;
     }
 
-    .bottom-bar .btn-small:hover {
-      background: rgba(108, 99, 255, 0.3);
+    .toolbar-btn:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
     }
 
-    .bottom-actions {
+    .toolbar-btn:active {
+      transform: scale(0.96);
+    }
+
+    .toolbar-actions {
       display: flex;
       gap: 6px;
       align-items: center;
     }
 
-    /* animations */
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+    .toolbar-ver {
+      font-size: 10px;
+      color: var(--text-tertiary);
+      padding: 2px 6px;
+      background: var(--fill);
+      border-radius: 4px;
     }
 
-    .connect-card { animation: fadeIn 0.5s ease-out; }
+    /* ===== Animations ===== */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .nav-card:nth-child(1) {
+      animation: fadeIn 0.35s ease-out;
+    }
+
+    .nav-card:nth-child(2) {
+      animation: fadeIn 0.35s ease-out 0.08s both;
+    }
+
+    .app-icon {
+      animation: fadeIn 0.3s ease-out;
+    }
   </style>
 </head>
-<body>
-  <div class="bg-animation"></div>
 
-  <!-- Title Bar -->
-  <div class="titlebar">
-    <span class="status-dot disconnected" id="status-dot"></span>
-    <span class="titlebar-title" id="titlebar-text">X-Dashboard — Disconnected</span>
+<body>
+  <div class="bg-animation" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;">
   </div>
 
-  <!-- Connection Page -->
-  <div id="connection-page">
-    <div class="logo">X-Dashboard</div>
-    <div class="subtitle">EA Trading Monitor — Connect to X-Server</div>
-    
-    <div class="connect-card">
-      <h2>🔗 Connect to Server</h2>
-      
-      <div class="input-group">
-        <label>Server URL</label>
-        <input type="text" id="server-url" placeholder="http://localhost:3000" value="http://localhost:3000" />
+  <!-- macOS Title Bar -->
+  <div class="titlebar">
+    <div class="traffic-lights">
+      <div class="traffic-light red"></div>
+      <div class="traffic-light yellow"></div>
+      <div class="traffic-light green"></div>
+    </div>
+    <span class="titlebar-title" id="titlebar-text">X-Dashboard</span>
+  </div>
+
+  <!-- Selection Page -->
+  <div id="selection-page">
+    <div class="app-icon">📡</div>
+    <div class="app-title">X-Dashboard</div>
+    <div class="app-subtitle">EA Trading Monitor</div>
+
+    <div class="cards-grid">
+      <!-- Server Control -->
+      <div class="nav-card server" onclick="openPage('server')">
+        <div class="card-icon-wrap">🖥️</div>
+        <div class="card-title">Server Control</div>
+        <div class="card-desc">จัดการ X-Server<br>MT5 Connections, EA Update</div>
+        <div class="card-url"><span class="lock">🔒</span> x-server.xea.dpdns.org</div>
       </div>
 
-      <div class="quick-urls">
-        <div class="quick-url" onclick="setUrl('http://localhost:3000')">localhost:3000</div>
-        <div class="quick-url" onclick="setUrl('http://127.0.0.1:3000')">127.0.0.1:3000</div>
+      <!-- Dashboard -->
+      <div class="nav-card dashboard" onclick="openPage('dashboard')">
+        <div class="card-icon-wrap">📊</div>
+        <div class="card-title">EA Dashboard</div>
+        <div class="card-desc">ดูข้อมูล EA, กราฟ P&L<br>สั่ง Close/Settings</div>
+        <div class="card-url"><span class="lock">🔒</span> xea.dpdns.org</div>
       </div>
-
-      <button class="btn-connect" id="btn-connect" onclick="connectToServer()">
-        Connect to Server
-      </button>
-
-      <div class="error-msg" id="error-msg"></div>
     </div>
   </div>
 
-  <!-- Dashboard iframe -->
-  <iframe id="dashboard-frame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+  <!-- Content iframe -->
+  <iframe id="dashboard-frame"></iframe>
 
-  <!-- Bottom Bar -->
-  <div class="bottom-bar">
-    <span id="bottom-status">Not connected</span>
-    <div class="bottom-actions">
-      <button class="btn-small" onclick="refreshDashboard()">↻ Refresh</button>
-      <button class="btn-small" onclick="disconnect()">⏏ Disconnect</button>
-      <span>v1.4.0</span>
+  <!-- macOS Bottom Toolbar -->
+  <div class="toolbar">
+    <span id="bottom-status">เลือกเมนู</span>
+    <div class="toolbar-actions">
+      <button class="toolbar-btn" onclick="refreshPage()">⟳ Refresh</button>
+      <button class="toolbar-btn" onclick="goHome()">◀ Home</button>
+      <span class="toolbar-ver">v1.5.0</span>
     </div>
   </div>
 
   <script>
-    let currentUrl = '';
-    let isConnected = false;
-    let refreshInterval = null;
+    let currentPage = '';
 
-    // Load saved URL
-    const savedUrl = localStorage.getItem('x-server-url');
-    if (savedUrl) {
-      document.getElementById('server-url').value = savedUrl;
+    const URLS = {
+      server: 'https://x-server.xea.dpdns.org',
+      dashboard: 'https://xea.dpdns.org'
+    };
+
+    const LABELS = {
+      server: 'Server Control',
+      dashboard: 'EA Dashboard'
+    };
+
+    function openPage(type) {
+      currentPage = type;
+      document.getElementById('dashboard-frame').src = URLS[type];
+      document.getElementById('dashboard-frame').style.display = 'block';
+      document.getElementById('selection-page').style.display = 'none';
+      document.getElementById('titlebar-text').textContent = LABELS[type];
+      document.getElementById('bottom-status').textContent = LABELS[type];
     }
 
-    function setUrl(url) {
-      document.getElementById('server-url').value = url;
-    }
-
-    async function connectToServer() {
-      const url = document.getElementById('server-url').value.trim();
-      if (!url) return;
-
-      const btn = document.getElementById('btn-connect');
-      const errorMsg = document.getElementById('error-msg');
-      const statusDot = document.getElementById('status-dot');
-
-      btn.textContent = '⏳ Connecting...';
-      btn.classList.add('connecting');
-      statusDot.className = 'status-dot connecting';
-      document.getElementById('titlebar-text').textContent = 'X-Dashboard — Connecting...';
-      errorMsg.style.display = 'none';
-
-      try {
-        // Test connection
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
-        
-        const response = await fetch(url, { 
-          mode: 'no-cors',
-          signal: controller.signal 
-        });
-        clearTimeout(timeoutId);
-
-        // Connection seems OK, load in iframe
-        currentUrl = url;
-        localStorage.setItem('x-server-url', url);
-
-        document.getElementById('dashboard-frame').src = url;
-        document.getElementById('dashboard-frame').style.display = 'block';
-        document.getElementById('connection-page').style.display = 'none';
-
-        statusDot.className = 'status-dot connected';
-        document.getElementById('titlebar-text').textContent = 'X-Dashboard — Connected to ' + url;
-        document.getElementById('bottom-status').textContent = '🟢 Connected: ' + url;
-        isConnected = true;
-
-        // Auto-refresh every 30s
-        if (refreshInterval) clearInterval(refreshInterval);
-        refreshInterval = setInterval(() => {
-          if (isConnected) {
-            document.getElementById('dashboard-frame').src = currentUrl;
-          }
-        }, 30000);
-
-      } catch (err) {
-        btn.textContent = 'Connect to Server';
-        btn.classList.remove('connecting');
-        statusDot.className = 'status-dot disconnected';
-        document.getElementById('titlebar-text').textContent = 'X-Dashboard — Connection Failed';
-        
-        if (err.name === 'AbortError') {
-          errorMsg.textContent = '⏱ Connection timeout — Server ไม่ตอบสนอง';
-        } else {
-          // With no-cors, opaque response is normal for successful connection
-          // Let's just try loading anyway
-          currentUrl = url;
-          localStorage.setItem('x-server-url', url);
-
-          document.getElementById('dashboard-frame').src = url;
-          document.getElementById('dashboard-frame').style.display = 'block';
-          document.getElementById('connection-page').style.display = 'none';
-
-          statusDot.className = 'status-dot connected';
-          document.getElementById('titlebar-text').textContent = 'X-Dashboard — Connected to ' + url;
-          document.getElementById('bottom-status').textContent = '🟢 Connected: ' + url;
-          isConnected = true;
-        }
-        errorMsg.style.display = errorMsg.textContent ? 'block' : 'none';
+    function refreshPage() {
+      if (currentPage) {
+        const frame = document.getElementById('dashboard-frame');
+        frame.src = frame.src;
       }
     }
 
-    function refreshDashboard() {
-      if (isConnected && currentUrl) {
-        document.getElementById('dashboard-frame').src = currentUrl;
-        document.getElementById('bottom-status').textContent = '🔄 Refreshed: ' + new Date().toLocaleTimeString();
-        setTimeout(() => {
-          document.getElementById('bottom-status').textContent = '🟢 Connected: ' + currentUrl;
-        }, 2000);
-      }
-    }
-
-    function disconnect() {
-      if (refreshInterval) clearInterval(refreshInterval);
-      isConnected = false;
-      currentUrl = '';
-      
+    function goHome() {
+      currentPage = '';
       document.getElementById('dashboard-frame').style.display = 'none';
       document.getElementById('dashboard-frame').src = '';
-      document.getElementById('connection-page').style.display = 'flex';
-      document.getElementById('status-dot').className = 'status-dot disconnected';
-      document.getElementById('titlebar-text').textContent = 'X-Dashboard — Disconnected';
-      document.getElementById('bottom-status').textContent = 'Not connected';
-      
-      const btn = document.getElementById('btn-connect');
-      btn.textContent = 'Connect to Server';
-      btn.classList.remove('connecting');
+      document.getElementById('selection-page').style.display = 'flex';
+      document.getElementById('titlebar-text').textContent = 'X-Dashboard';
+      document.getElementById('bottom-status').textContent = 'เลือกเมนู';
     }
 
-    // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
-      if (e.metaKey && e.key === 'r') {
-        e.preventDefault();
-        refreshDashboard();
-      }
-      if (e.key === 'Enter' && !isConnected) {
-        connectToServer();
-      }
-    });
-
-    // Auto-connect on launch if URL is saved
-    window.addEventListener('DOMContentLoaded', () => {
-      const savedUrl = localStorage.getItem('x-server-url');
-      if (savedUrl) {
-        setTimeout(() => connectToServer(), 500);
-      }
+      if (e.metaKey && e.key === 'r') { e.preventDefault(); refreshPage(); }
+      if (e.key === 'Escape' && currentPage) { goHome(); }
     });
   </script>
 </body>
+
 </html>
