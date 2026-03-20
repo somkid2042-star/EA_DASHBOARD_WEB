@@ -44,19 +44,19 @@ jobs:
           
           # Verify Include Directory
           $mql5Dir = Join-Path $mt5Dir "MQL5"
-          $includeDir = Join-Path $mql5Dir "Include"
-          if (-not (Test-Path (Join-Path $includeDir "Trade\Trade.mqh"))) {
-             Write-Host "⚠️ Trade.mqh not found in $includeDir! Trying APPDATA..."
+          $includeDir = $mql5Dir
+          if (-not (Test-Path (Join-Path $mql5Dir "Include\Trade\Trade.mqh"))) {
+             Write-Host "⚠️ Trade.mqh not found in $mql5Dir\Include! Trying APPDATA..."
              $appDataMql5 = Get-ChildItem -Path "$env:APPDATA\MetaQuotes\Terminal" -Filter "Trade.mqh" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
              if ($appDataMql5) {
-                $includeDir = $appDataMql5.Directory.Parent.FullName
-                Write-Host "Found Include dir in APPDATA: $includeDir"
+                $includeDir = $appDataMql5.Directory.Parent.Parent.FullName
+                Write-Host "Found MQL5 dir in APPDATA: $includeDir"
              } else {
                 Write-Error "CRITICAL: MQL5 Standard Library (Trade.mqh) could not be initialized."
                 exit 1
              }
           } else {
-             Write-Host "✅ Trade.mqh initialized successfully at $includeDir"
+             Write-Host "✅ Trade.mqh initialized successfully at $mql5Dir\Include"
           }
           
           # Compile EAs
