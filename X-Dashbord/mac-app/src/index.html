@@ -211,75 +211,54 @@
       background: var(--bg);
     }
 
-    /* ===== Bottom Nav Bar ===== */
-    .navbar {
-      height: 52px;
+    /* ===== Bottom Bar ===== */
+    .bottombar {
+      height: 32px;
       background: rgba(20, 20, 36, 0.95);
       backdrop-filter: blur(12px);
       border-top: 1px solid rgba(255, 255, 255, 0.06);
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 0 20px;
+      justify-content: space-between;
+      padding: 0 14px;
       z-index: 100;
       flex-shrink: 0;
       -webkit-app-region: no-drag;
     }
 
-    .nav-btn {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 3px;
-      padding: 6px 18px;
-      background: none;
-      border: none;
-      cursor: pointer;
-      border-radius: 8px;
-      transition: all 0.15s;
-    }
-
-    .nav-btn:hover {
-      background: rgba(255, 255, 255, 0.06);
-    }
-
-    .nav-btn:active {
-      transform: scale(0.95);
-    }
-
-    .nav-btn svg {
-      width: 20px;
-      height: 20px;
+    .bar-status {
+      font-size: 11px;
       color: var(--text3);
-    }
-
-    .nav-btn span {
-      font-size: 9px;
       font-weight: 500;
-      color: var(--text3);
+    }
+
+    .bar-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .bar-btn {
+      padding: 3px 10px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 5px;
+      color: var(--text2);
+      font-size: 10px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
       font-family: 'Inter', sans-serif;
     }
 
-    .nav-btn.active svg {
-      color: var(--green);
+    .bar-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text);
     }
 
-    .nav-btn.active span {
-      color: var(--green);
-    }
-
-    .nav-sep {
-      width: 1px;
-      height: 24px;
-      background: rgba(255, 255, 255, 0.06);
-      margin: 0 4px;
-    }
-
-    .nav-ver {
-      font-size: 9px;
+    .bar-ver {
+      font-size: 10px;
       color: var(--text3);
-      padding: 0 8px;
     }
 
     /* ===== Animations ===== */
@@ -370,44 +349,14 @@
   <!-- Content iframe -->
   <iframe id="content-frame"></iframe>
 
-  <!-- Bottom Nav Bar -->
-  <div class="navbar">
-    <button class="nav-btn active" id="nav-home" onclick="goHome()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-        stroke-linejoin="round">
-        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-        <polyline points="9 22 9 12 15 12 15 22" />
-      </svg>
-      <span>Home</span>
-    </button>
-    <button class="nav-btn" id="nav-server" onclick="openPage('server')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-        stroke-linejoin="round">
-        <rect x="2" y="3" width="20" height="14" rx="2" />
-        <path d="M8 21h8" />
-        <path d="M12 17v4" />
-      </svg>
-      <span>Server</span>
-    </button>
-    <button class="nav-btn" id="nav-dashboard" onclick="openPage('dashboard')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-        stroke-linejoin="round">
-        <path d="M18 20V10" />
-        <path d="M12 20V4" />
-        <path d="M6 20v-6" />
-      </svg>
-      <span>Dashboard</span>
-    </button>
-    <div class="nav-sep"></div>
-    <button class="nav-btn" onclick="refreshPage()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-        stroke-linejoin="round">
-        <polyline points="23 4 23 10 17 10" />
-        <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" />
-      </svg>
-      <span>Reload</span>
-    </button>
-    <span class="nav-ver">v1.5.0</span>
+  <!-- Bottom Bar -->
+  <div class="bottombar">
+    <span class="bar-status" id="bottom-status">เลือกเมนู</span>
+    <div class="bar-actions">
+      <button class="bar-btn" onclick="refreshPage()">⟳ Refresh</button>
+      <button class="bar-btn" onclick="goHome()">◀ Home</button>
+      <span class="bar-ver">v1.5.0</span>
+    </div>
   </div>
 
   <script>
@@ -417,25 +366,18 @@
       server: 'https://x-server.xea.dpdns.org',
       dashboard: 'https://xea.dpdns.org'
     };
-
-    function setActiveNav(id) {
-      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-      if (id) document.getElementById(id).classList.add('active');
-    }
+    const LABELS = { server: 'Server Control', dashboard: 'EA Dashboard' };
 
     function openPage(type) {
       currentPage = type;
       document.getElementById('content-frame').src = URLS[type];
       document.getElementById('content-frame').style.display = 'block';
       document.getElementById('main-page').style.display = 'none';
-      setActiveNav('nav-' + type);
+      document.getElementById('bottom-status').textContent = LABELS[type];
     }
 
     function refreshPage() {
-      if (currentPage) {
-        const f = document.getElementById('content-frame');
-        f.src = f.src;
-      }
+      if (currentPage) { const f = document.getElementById('content-frame'); f.src = f.src; }
     }
 
     function goHome() {
@@ -443,7 +385,7 @@
       document.getElementById('content-frame').style.display = 'none';
       document.getElementById('content-frame').src = '';
       document.getElementById('main-page').style.display = 'flex';
-      setActiveNav('nav-home');
+      document.getElementById('bottom-status').textContent = 'เลือกเมนู';
     }
 
     document.addEventListener('keydown', (e) => {
