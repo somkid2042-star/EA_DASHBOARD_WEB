@@ -17,7 +17,7 @@ long g_MagicNumber = 20261111;
 CTrade   g_trade;
 
 // Version
-string g_EAVersion = "1.3.3";
+string g_EAVersion = "1.4.0";
 string g_EAName    = "X_BTC";
 
 //--- BTC Strategy Variables
