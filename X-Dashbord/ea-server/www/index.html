@@ -2084,6 +2084,23 @@
                 <div class="form-group"><label>Basket Trail Start ($)</label><input type="number" step="0.5" id="set_trail_start" class="form-input" value="${s.trail_start || ''}"></div>
                 <div class="form-group"><label>Basket Trail Step ($)</label><input type="number" step="0.5" id="set_trail_step" class="form-input" value="${s.trail_step || ''}"></div>
 
+                <h4 style="margin:20px 0 0 0; padding-bottom:5px; border-bottom:2px solid var(--primary-blue); color:var(--primary-blue);">🛡️ Hedge & Recovery</h4>
+                <div class="form-group"><label>Auto Hedge เมื่อเทรนด์กลับตัว</label>
+                    <select id="set_use_auto_hedge" class="form-input">
+                        <option value="true" ${s.use_auto_hedge !== false ? 'selected' : ''}>เปิดใช้งาน</option>
+                        <option value="false" ${s.use_auto_hedge === false ? 'selected' : ''}>ปิด</option>
+                    </select></div>
+                <div class="form-group"><label>Max Drawdown (%)</label><input type="number" step="1" id="set_hedge_max_dd" class="form-input" value="${s.hedge_max_dd || 50}"></div>
+                <div class="form-group"><label>Reverse Grid หลัง Hedge</label>
+                    <select id="set_use_reverse_grid" class="form-input">
+                        <option value="true" ${s.use_reverse_grid !== false ? 'selected' : ''}>เปิดใช้งาน</option>
+                        <option value="false" ${s.use_reverse_grid === false ? 'selected' : ''}>ปิด</option>
+                    </select></div>
+                <div class="form-group"><label>Recovery Target ($)</label><input type="number" step="1" id="set_recovery_target_usd" class="form-input" value="${s.recovery_target_usd || 0}"></div>
+
+                <h4 style="margin:20px 0 0 0; padding-bottom:5px; border-bottom:2px solid var(--primary-blue); color:var(--primary-blue);">⏱️ Smart Grid Protection</h4>
+                <div class="form-group"><label>Cooldown หลังปิดตะกร้า (วินาที)</label><input type="number" step="5" id="set_cooldown_seconds" class="form-input" value="${s.cooldown_seconds || 30}"></div>
+
                 <button class="btn-save" id="btnSaveSettings" onclick="saveSettings()" style="margin-top:15px;">บันทึกการตั้งค่า Grid</button>`;
             }
             formEl.innerHTML = html;
@@ -2101,37 +2118,33 @@
 
             if (currentStrategy === 'BTC_MOMENTUM') {
                 settingsPayload = {
-                    ema_fast: parseInt(document.getElementById('set_btc_ema_fast').value),
-                    ema_slow: parseInt(document.getElementById('set_btc_ema_slow').value),
-                    trend_tf: parseInt(document.getElementById('set_btc_trend_tf').value),
-                    rsi_period: parseInt(document.getElementById('set_btc_rsi_period').value),
-                    rsi_tf: parseInt(document.getElementById('set_btc_rsi_tf').value),
-                    rsi_buy: parseInt(document.getElementById('set_btc_rsi_buy').value),
-                    rsi_sell: parseInt(document.getElementById('set_btc_rsi_sell').value),
-                    risk_reward: parseFloat(document.getElementById('set_btc_risk_reward').value),
-                    atr_sl_mult: parseFloat(document.getElementById('set_btc_atr_sl_mult').value),
-                    lot_size: parseFloat(document.getElementById('set_btc_lot_size').value),
-                    trail_atr_mult: parseFloat(document.getElementById('set_btc_trail_atr_mult').value),
-                    partial_tp: document.getElementById('set_btc_partial_tp').value === 'true'
+                    btc_ema_fast: parseInt(document.getElementById('set_btc_ema_fast').value),
+                    btc_ema_slow: parseInt(document.getElementById('set_btc_ema_slow').value),
+                    btc_rsi_period: parseInt(document.getElementById('set_btc_rsi_period').value),
+                    btc_rsi_buy: parseInt(document.getElementById('set_btc_rsi_buy').value),
+                    btc_rsi_sell: parseInt(document.getElementById('set_btc_rsi_sell').value),
+                    btc_risk_reward: parseFloat(document.getElementById('set_btc_risk_reward').value),
+                    btc_atr_sl_mult: parseFloat(document.getElementById('set_btc_atr_sl_mult').value),
+                    btc_lot_size: parseFloat(document.getElementById('set_btc_lot_size').value),
+                    btc_trail_atr_mult: parseFloat(document.getElementById('set_btc_trail_atr_mult').value),
+                    btc_partial_tp: document.getElementById('set_btc_partial_tp').value === 'true'
                 };
             } else if (currentStrategy === 'XAU_TREND') {
                 settingsPayload = {
-                    ema_fast: parseInt(document.getElementById('set_xau_ema_fast').value),
-                    ema_slow: parseInt(document.getElementById('set_xau_ema_slow').value),
-                    trend_tf: parseInt(document.getElementById('set_xau_trend_tf').value),
-                    adx_period: parseInt(document.getElementById('set_xau_adx_period').value),
-                    adx_min: parseInt(document.getElementById('set_xau_adx_min').value),
-                    rsi_period: parseInt(document.getElementById('set_xau_rsi_period').value),
-                    rsi_tf: parseInt(document.getElementById('set_xau_rsi_tf').value),
-                    rsi_buy: parseInt(document.getElementById('set_xau_rsi_buy').value),
-                    rsi_sell: parseInt(document.getElementById('set_xau_rsi_sell').value),
-                    risk_reward: parseFloat(document.getElementById('set_xau_risk_reward').value),
-                    atr_sl_mult: parseFloat(document.getElementById('set_xau_atr_sl_mult').value),
-                    lot_size: parseFloat(document.getElementById('set_xau_lot_size').value),
-                    trail_atr_mult: parseFloat(document.getElementById('set_xau_trail_atr_mult').value),
-                    partial_tp: document.getElementById('set_xau_partial_tp').value === 'true',
-                    session_start: parseInt(document.getElementById('set_xau_session_start').value),
-                    session_end: parseInt(document.getElementById('set_xau_session_end').value)
+                    xau_ema_fast: parseInt(document.getElementById('set_xau_ema_fast').value),
+                    xau_ema_slow: parseInt(document.getElementById('set_xau_ema_slow').value),
+                    xau_adx_period: parseInt(document.getElementById('set_xau_adx_period').value),
+                    xau_adx_min: parseInt(document.getElementById('set_xau_adx_min').value),
+                    xau_rsi_period: parseInt(document.getElementById('set_xau_rsi_period').value),
+                    xau_rsi_buy: parseInt(document.getElementById('set_xau_rsi_buy').value),
+                    xau_rsi_sell: parseInt(document.getElementById('set_xau_rsi_sell').value),
+                    xau_risk_reward: parseFloat(document.getElementById('set_xau_risk_reward').value),
+                    xau_atr_sl_mult: parseFloat(document.getElementById('set_xau_atr_sl_mult').value),
+                    xau_lot_size: parseFloat(document.getElementById('set_xau_lot_size').value),
+                    xau_trail_atr_mult: parseFloat(document.getElementById('set_xau_trail_atr_mult').value),
+                    xau_partial_tp: document.getElementById('set_xau_partial_tp').value === 'true',
+                    xau_session_start: parseInt(document.getElementById('set_xau_session_start').value),
+                    xau_session_end: parseInt(document.getElementById('set_xau_session_end').value)
                 };
             } else {
                 settingsPayload = {
@@ -2153,7 +2166,12 @@
                     rsi_sell: parseInt(document.getElementById('set_rsi_sell').value),
                     use_basket_trail: document.getElementById('set_use_basket_trail').value === 'true',
                     trail_start: parseFloat(document.getElementById('set_trail_start').value),
-                    trail_step: parseFloat(document.getElementById('set_trail_step').value)
+                    trail_step: parseFloat(document.getElementById('set_trail_step').value),
+                    use_auto_hedge: document.getElementById('set_use_auto_hedge').value === 'true',
+                    hedge_max_dd: parseFloat(document.getElementById('set_hedge_max_dd').value),
+                    use_reverse_grid: document.getElementById('set_use_reverse_grid').value === 'true',
+                    recovery_target_usd: parseFloat(document.getElementById('set_recovery_target_usd').value),
+                    cooldown_seconds: parseInt(document.getElementById('set_cooldown_seconds').value)
                 };
             }
 

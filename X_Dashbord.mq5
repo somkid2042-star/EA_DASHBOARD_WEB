@@ -1,91 +1,24 @@
 //+------------------------------------------------------------------+
 //|                                                 X_Dashbord.mq5   |
-//|               Smart EA Grid with Dynamic ATR Step & USD Target   |
+//|         Smart Grid EA — All Settings from Web Dashboard          |
 //+------------------------------------------------------------------+
-#property copyright "X_Dashbord v1.0"
-#property version   "1.00"
-#property description "Smart Grid with ATR Dynamic Step, Trend Filter, and USD Basket Management"
+#property copyright "X_Dashbord v2.0"
+#property version   "2.00"
+#property description "Smart Grid — No Inputs, Web-Controlled, Real-time Sync"
 
 #include <Trade\Trade.mqh>
 
 //+------------------------------------------------------------------+
-//| ===== Input Parameters =====                                      |
+//| ===== Enums =====                                                 |
 //+------------------------------------------------------------------+
-
 enum ENUM_TP_MODE
 {
    TP_MODE_BASKET, // TP แบบรวบยอดทั้งตระกร้า
    TP_MODE_SINGLE  // TP แยกตามแต่ละออเดอร์
 };
 
-input group "══════ Risk Management ══════"
-input double   InpStartLot        = 0.01;        // Lot เริ่มต้น
-input double   InpLotMultiplier   = 1.5;         // ตัวคูณ Lot (Martingale)
-input int      InpMaxLevels       = 10;          // จำนวน Level สูงสุด (ต่อทิศทาง)
-input ENUM_TP_MODE InpTPMode      = TP_MODE_BASKET; // รูปแบบการตั้ง TP
-input double   InpTakeProfitUSD   = 10.0;        // กำไรเป้าหมาย ($) ตามรูปแบบข้างบน
-
-input group "══════ Grid Settings ══════"
-input bool     InpUseDynamicStep  = true;        // [เปิด/ปิด] ใช้ Dynamic Grid Step (ATR)
-input double   InpFixedGridStep   = 200;         // ระยะกริดคงที่ (ถ้าปิด Dynamic) [points]
-input int      InpATRPeriod       = 14;          // ช่วงเวลา ATR
-input double   InpATRMultiplier   = 1.0;         // ตัวคูณความกว้าง ATR สำหรับเบสหลบข่าว
-
-input group "══════ Trend & Momentum Filter ══════"
-input bool     InpUseTrendFilter  = true;        // ใช้กราฟเทรนด์กรองก่อนเปิด (EMA+RSI)
-input int      InpEmaFast         = 21;          // EMA เร็ว
-input int      InpEmaSlow         = 50;          // EMA ช้า
-input ENUM_TIMEFRAMES InpTrendTF  = PERIOD_H1;   // Timeframe เช็คเทรนด์
-input int      InpRSIPeriod       = 14;          // RSI Period
-input ENUM_TIMEFRAMES InpRSITF    = PERIOD_M15;  // RSI Timeframe สำหรับหาจุดย่อ (Pullback)
-input int      InpRSIBuyLevel     = 30;          // RSI ต่ำกว่านี้คือย่อตัว (สำหรับ Buy)
-input int      InpRSISellLevel    = 70;          // RSI สูงกว่านี้คือเด้ง (สำหรับ Sell)
-
-input group "══════ Basket Trailing Stop ══════"
-input bool     InpUseBasketTrail  = true;        // ใช้ Trailing Stop รวมทั้งตระกร้า (USD)
-input double   InpBasketTrailStartUSD = 5.0;     // เริ่ม Trail เมื่อกำไรรวมถึง ($)
-input double   InpBasketTrailStepUSD  = 2.0;     // ล็อคกำไรทีละ ($)
-
-input group "══════ Hedge & Recovery ══════"
-input bool     InpUseAutoHedge    = true;         // เปิด Auto Hedge เมื่อเทรนด์กลับตัว
-input double   InpHedgeMaxDDPct   = 50.0;         // Max Drawdown (%) ก่อน Cut Loss ทั้งหมด
-input bool     InpUseReverseGrid  = true;         // เปิด Reverse Grid หลัง Hedge
-input double   InpRecoveryTargetUSD = 0.0;        // เป้ากำไรก่อนปิดทุกอัน (0=ใช้ค่า TP)
-
-input group "══════ General ══════"
-input long     InpMagicNumber     = 20261111;    // Magic Number
-
-input group "══════ BTC Momentum Strategy ══════"
-input int      InpBTC_EMA_Fast     = 50;          // BTC: EMA Fast (Trend)
-input int      InpBTC_EMA_Slow     = 200;         // BTC: EMA Slow (Trend)
-input ENUM_TIMEFRAMES InpBTC_TrendTF = PERIOD_H4;  // BTC: Trend Timeframe
-input int      InpBTC_RSI_Period   = 14;          // BTC: RSI Period
-input ENUM_TIMEFRAMES InpBTC_RSI_TF  = PERIOD_H1;  // BTC: RSI Timeframe (Entry)
-input int      InpBTC_RSI_Buy      = 35;          // BTC: RSI Buy Level (Pullback)
-input int      InpBTC_RSI_Sell     = 65;          // BTC: RSI Sell Level (Pullback)
-input double   InpBTC_RiskReward   = 2.0;         // BTC: Risk:Reward Ratio
-input double   InpBTC_ATR_SL_Mult  = 1.5;         // BTC: ATR x SL Multiplier
-input double   InpBTC_LotSize      = 0.01;        // BTC: Lot Size
-input double   InpBTC_TrailATRMult = 1.0;         // BTC: ATR x Trail Step
-input bool     InpBTC_PartialTP    = true;         // BTC: Partial TP (close 50% at TP)
-
-input group "══════ XAU Smart Trend Strategy ══════"
-input int      InpXAU_EMA_Fast     = 21;           // XAU: EMA Fast (Trend)
-input int      InpXAU_EMA_Slow     = 55;           // XAU: EMA Slow (Trend)
-input ENUM_TIMEFRAMES InpXAU_TrendTF = PERIOD_H4;  // XAU: Trend Timeframe
-input int      InpXAU_ADX_Period   = 14;           // XAU: ADX Period
-input int      InpXAU_ADX_Min      = 20;           // XAU: ADX Min (Trend Strength)
-input int      InpXAU_RSI_Period   = 14;           // XAU: RSI Period
-input ENUM_TIMEFRAMES InpXAU_RSI_TF  = PERIOD_H1;  // XAU: RSI Timeframe (Entry)
-input int      InpXAU_RSI_Buy      = 40;           // XAU: RSI Buy Level (Pullback)
-input int      InpXAU_RSI_Sell     = 60;           // XAU: RSI Sell Level (Pullback)
-input double   InpXAU_RiskReward   = 2.0;          // XAU: Risk:Reward Ratio
-input double   InpXAU_ATR_SL_Mult  = 2.0;          // XAU: ATR x SL Multiplier
-input double   InpXAU_LotSize      = 0.01;         // XAU: Lot Size
-input double   InpXAU_TrailATRMult = 1.5;          // XAU: ATR x Trail Step
-input bool     InpXAU_PartialTP    = true;          // XAU: Partial TP (close 50% at TP)
-input int      InpXAU_SessionStart = 8;             // XAU: Session Start (GMT Hour)
-input int      InpXAU_SessionEnd   = 22;            // XAU: Session End (GMT Hour)
+// Magic Number (hardcoded — ไม่ต้อง input)
+long g_MagicNumber = 20261111;
 
 //+------------------------------------------------------------------+
 //| ===== Global Variables =====                                       |
@@ -158,67 +91,84 @@ double   g_SetHedgeMaxDDPct;
 bool     g_SetUseReverseGrid;
 double   g_SetRecoveryTargetUSD;
 
-//--- Dynamic Settings
-double   g_SetStartLot;
-double   g_SetLotMultiplier;
-int      g_SetMaxLevels;
-ENUM_TP_MODE g_SetTPMode;
-double   g_SetTakeProfitUSD;
-bool     g_SetUseDynamicStep;
-double   g_SetFixedGridStep;
-int      g_SetATRPeriod;
-double   g_SetATRMultiplier;
-bool     g_SetUseTrendFilter;
-int      g_SetEmaFast;
-int      g_SetEmaSlow;
-int      g_SetRSIPeriod;
-ENUM_TIMEFRAMES g_SetRSITF;
-int      g_SetRSIBuyLevel;
-int      g_SetRSISellLevel;
-bool     g_SetUseBasketTrail;
-double   g_SetBasketTrailStartUSD;
-double   g_SetBasketTrailStepUSD;
+//--- Smart Grid: Cooldown & Protection
+datetime g_lastCloseTime    = 0;
+int      g_cooldownSeconds  = 30;
+
+//--- Dynamic Settings (Defaults — overridden by web app)
+double   g_SetStartLot        = 0.01;
+double   g_SetLotMultiplier   = 1.5;
+int      g_SetMaxLevels       = 10;
+ENUM_TP_MODE g_SetTPMode      = TP_MODE_BASKET;
+double   g_SetTakeProfitUSD   = 10.0;
+bool     g_SetUseDynamicStep  = true;
+double   g_SetFixedGridStep   = 200;
+int      g_SetATRPeriod       = 14;
+double   g_SetATRMultiplier   = 1.0;
+bool     g_SetUseTrendFilter  = true;
+int      g_SetEmaFast         = 21;
+int      g_SetEmaSlow         = 50;
+int      g_SetRSIPeriod       = 14;
+ENUM_TIMEFRAMES g_SetRSITF    = PERIOD_M15;
+int      g_SetRSIBuyLevel     = 30;
+int      g_SetRSISellLevel    = 70;
+bool     g_SetUseBasketTrail  = true;
+double   g_SetBasketTrailStartUSD = 5.0;
+double   g_SetBasketTrailStepUSD  = 2.0;
+ENUM_TIMEFRAMES g_SetTrendTF  = PERIOD_H1;
+
+//--- BTC Settings (Defaults — overridden by web app)
+int      g_SetBTC_EMA_Fast     = 50;
+int      g_SetBTC_EMA_Slow     = 200;
+ENUM_TIMEFRAMES g_SetBTC_TrendTF = PERIOD_H4;
+int      g_SetBTC_RSI_Period   = 14;
+ENUM_TIMEFRAMES g_SetBTC_RSI_TF  = PERIOD_H1;
+int      g_SetBTC_RSI_Buy      = 35;
+int      g_SetBTC_RSI_Sell     = 65;
+double   g_SetBTC_RiskReward   = 2.0;
+double   g_SetBTC_ATR_SL_Mult  = 1.5;
+double   g_SetBTC_LotSize      = 0.01;
+double   g_SetBTC_TrailATRMult = 1.0;
+bool     g_SetBTC_PartialTP    = true;
+
+//--- XAU Settings (Defaults — overridden by web app)
+int      g_SetXAU_EMA_Fast     = 21;
+int      g_SetXAU_EMA_Slow     = 55;
+ENUM_TIMEFRAMES g_SetXAU_TrendTF = PERIOD_H4;
+int      g_SetXAU_ADX_Period   = 14;
+int      g_SetXAU_ADX_Min      = 20;
+int      g_SetXAU_RSI_Period   = 14;
+ENUM_TIMEFRAMES g_SetXAU_RSI_TF  = PERIOD_H1;
+int      g_SetXAU_RSI_Buy      = 40;
+int      g_SetXAU_RSI_Sell     = 60;
+double   g_SetXAU_RiskReward   = 2.0;
+double   g_SetXAU_ATR_SL_Mult  = 2.0;
+double   g_SetXAU_LotSize      = 0.01;
+double   g_SetXAU_TrailATRMult = 1.5;
+bool     g_SetXAU_PartialTP    = true;
+int      g_SetXAU_SessionStart = 8;
+int      g_SetXAU_SessionEnd   = 22;
 
 //--- Dashboard
 string   g_prefix        = "SMART_";
-bool     InpShowDashboard = true;
 
 //+------------------------------------------------------------------+
 //| ===== OnInit() =====                                              |
 //+------------------------------------------------------------------+
 int OnInit()
 {
-   Print("=== X_Dashbord v1.0 เริ่มทำงาน ===");
+   Print("=== X_Dashbord v2.0 Smart Grid (Web-Controlled) ===");
    
-   g_trade.SetExpertMagicNumber(InpMagicNumber);
+   g_trade.SetExpertMagicNumber(g_MagicNumber);
    g_trade.SetDeviationInPoints(30);
    g_trade.SetTypeFilling(ORDER_FILLING_IOC);
    
-   //--- Initial Variable Set (Map Inputs to Internal Dynamic Variables)
-   g_SetStartLot      = InpStartLot;
-   g_SetLotMultiplier = InpLotMultiplier;
-   g_SetMaxLevels     = InpMaxLevels;
-   g_SetTPMode        = InpTPMode;
-   g_SetTakeProfitUSD = InpTakeProfitUSD;
-   g_SetUseDynamicStep = InpUseDynamicStep;
-   g_SetFixedGridStep = InpFixedGridStep;
-   g_SetATRPeriod     = InpATRPeriod;
-   g_SetATRMultiplier = InpATRMultiplier;
-   g_SetUseTrendFilter= InpUseTrendFilter;
-   g_SetEmaFast       = InpEmaFast;
-   g_SetEmaSlow       = InpEmaSlow;
-   g_SetRSIPeriod     = InpRSIPeriod;
-   g_SetRSITF         = InpRSITF;
-   g_SetRSIBuyLevel   = InpRSIBuyLevel;
-   g_SetRSISellLevel  = InpRSISellLevel;
-   g_SetUseBasketTrail = InpUseBasketTrail;
-   g_SetBasketTrailStartUSD = InpBasketTrailStartUSD;
-   g_SetBasketTrailStepUSD  = InpBasketTrailStepUSD;
-   
-   g_SetUseAutoHedge    = InpUseAutoHedge;
-   g_SetHedgeMaxDDPct   = InpHedgeMaxDDPct;
-   g_SetUseReverseGrid  = InpUseReverseGrid;
-   g_SetRecoveryTargetUSD = InpRecoveryTargetUSD;
+   //--- Hedge defaults
+   g_SetUseAutoHedge      = true;
+   g_SetHedgeMaxDDPct     = 50.0;
+   g_SetUseReverseGrid    = true;
+   g_SetRecoveryTargetUSD = 0.0;
+   g_lastCloseTime        = 0;
    
    g_highestProfitUSD = 0;
    g_maxDrawdownPct = 0;
@@ -234,11 +184,11 @@ int OnInit()
    if(g_isXAU)
    {
       Print("🟡 Gold Detected! Using XAU Smart Trend Strategy (Non-Grid)");
-      g_xauHandleEMA21  = iMA(_Symbol, InpXAU_TrendTF, InpXAU_EMA_Fast, 0, MODE_EMA, PRICE_CLOSE);
-      g_xauHandleEMA55  = iMA(_Symbol, InpXAU_TrendTF, InpXAU_EMA_Slow, 0, MODE_EMA, PRICE_CLOSE);
-      g_xauHandleADX    = iADX(_Symbol, InpXAU_TrendTF, InpXAU_ADX_Period);
-      g_xauHandleRSI    = iRSI(_Symbol, InpXAU_RSI_TF, InpXAU_RSI_Period, PRICE_CLOSE);
-      g_xauHandleATR    = iATR(_Symbol, InpXAU_RSI_TF, 14);
+      g_xauHandleEMA21  = iMA(_Symbol, g_SetXAU_TrendTF, g_SetXAU_EMA_Fast, 0, MODE_EMA, PRICE_CLOSE);
+      g_xauHandleEMA55  = iMA(_Symbol, g_SetXAU_TrendTF, g_SetXAU_EMA_Slow, 0, MODE_EMA, PRICE_CLOSE);
+      g_xauHandleADX    = iADX(_Symbol, g_SetXAU_TrendTF, g_SetXAU_ADX_Period);
+      g_xauHandleRSI    = iRSI(_Symbol, g_SetXAU_RSI_TF, g_SetXAU_RSI_Period, PRICE_CLOSE);
+      g_xauHandleATR    = iATR(_Symbol, g_SetXAU_RSI_TF, 14);
       
       if(g_xauHandleEMA21 == INVALID_HANDLE || g_xauHandleEMA55 == INVALID_HANDLE ||
          g_xauHandleADX == INVALID_HANDLE || g_xauHandleRSI == INVALID_HANDLE || g_xauHandleATR == INVALID_HANDLE)
@@ -253,10 +203,10 @@ int OnInit()
    else if(g_isBTC)
    {
       Print("🟠 BTC Detected! Using Momentum + RSI Pullback Strategy");
-      g_btcHandleEMA50  = iMA(_Symbol, InpBTC_TrendTF, InpBTC_EMA_Fast, 0, MODE_EMA, PRICE_CLOSE);
-      g_btcHandleEMA200 = iMA(_Symbol, InpBTC_TrendTF, InpBTC_EMA_Slow, 0, MODE_EMA, PRICE_CLOSE);
-      g_btcHandleRSI    = iRSI(_Symbol, InpBTC_RSI_TF, InpBTC_RSI_Period, PRICE_CLOSE);
-      g_btcHandleATR    = iATR(_Symbol, InpBTC_RSI_TF, 14);
+      g_btcHandleEMA50  = iMA(_Symbol, g_SetBTC_TrendTF, g_SetBTC_EMA_Fast, 0, MODE_EMA, PRICE_CLOSE);
+      g_btcHandleEMA200 = iMA(_Symbol, g_SetBTC_TrendTF, g_SetBTC_EMA_Slow, 0, MODE_EMA, PRICE_CLOSE);
+      g_btcHandleRSI    = iRSI(_Symbol, g_SetBTC_RSI_TF, g_SetBTC_RSI_Period, PRICE_CLOSE);
+      g_btcHandleATR    = iATR(_Symbol, g_SetBTC_RSI_TF, 14);
       
       if(g_btcHandleEMA50 == INVALID_HANDLE || g_btcHandleEMA200 == INVALID_HANDLE ||
          g_btcHandleRSI == INVALID_HANDLE || g_btcHandleATR == INVALID_HANDLE)
@@ -271,9 +221,9 @@ int OnInit()
    else
    {
       //--- Grid Indicator Handles (non-XAU, non-BTC)
-      g_handleEmaFast = iMA(_Symbol, InpTrendTF, g_SetEmaFast, 0, MODE_EMA, PRICE_CLOSE);
-      g_handleEmaSlow = iMA(_Symbol, InpTrendTF, g_SetEmaSlow, 0, MODE_EMA, PRICE_CLOSE);
-      g_handleATR     = iATR(_Symbol, InpTrendTF, g_SetATRPeriod);
+      g_handleEmaFast = iMA(_Symbol, g_SetTrendTF, g_SetEmaFast, 0, MODE_EMA, PRICE_CLOSE);
+      g_handleEmaSlow = iMA(_Symbol, g_SetTrendTF, g_SetEmaSlow, 0, MODE_EMA, PRICE_CLOSE);
+      g_handleATR     = iATR(_Symbol, g_SetTrendTF, g_SetATRPeriod);
       g_handleRSI     = iRSI(_Symbol, g_SetRSITF, g_SetRSIPeriod, PRICE_CLOSE);
       
       if(g_handleEmaFast == INVALID_HANDLE || g_handleEmaSlow == INVALID_HANDLE || g_handleATR == INVALID_HANDLE || g_handleRSI == INVALID_HANDLE)
@@ -327,8 +277,13 @@ void OnTick()
    if(g_isXAU) { OnTickXAU(); return; }
    //--- BTC Mode: use Momentum strategy instead of Grid
    if(g_isBTC) { OnTickBTC(); return; }
-   //--- 1) รับค่า Market & Indicators
+   //--- 1) Update Indicators
    UpdateIndicators();
+   
+   //--- 1.5) Spread Filter — skip if spread is too wide
+   double spread = SymbolInfoDouble(_Symbol, SYMBOL_ASK) - SymbolInfoDouble(_Symbol, SYMBOL_BID);
+   double maxSpread = g_currentGridStepPt * 0.3;
+   if(maxSpread > 0 && spread > maxSpread) return;
    
    //--- 2) สแกนออเดอร์
    ScanOrders();
@@ -371,7 +326,7 @@ void OnTick()
             {
                ulong ticket = PositionGetTicket(i);
                if(ticket <= 0) continue;
-               if(PositionGetInteger(POSITION_MAGIC) != InpMagicNumber) continue;
+               if(PositionGetInteger(POSITION_MAGIC) != g_MagicNumber) continue;
                if(PositionGetString(POSITION_SYMBOL) != _Symbol) continue;
                
                double orderProfit = PositionGetDouble(POSITION_PROFIT) + PositionGetDouble(POSITION_SWAP);
@@ -501,13 +456,10 @@ void OnTick()
 //+------------------------------------------------------------------+
 void OnTimer()
 {
-   // Handle pending commands first (like closing orders)
-   CheckPendingCommands();
-   
-   // Scan orders to ensure variables are updated if commands changed them
+   // Scan orders to keep stats fresh
    ScanOrders();
    
-   // Sync immediately to dashboard
+   // Sync to web dashboard (also receives commands in response)
    SyncToWebApp();
 }
 
@@ -540,7 +492,7 @@ void ScanOrders()
    {
       ulong ticket = PositionGetTicket(i);
       if(ticket <= 0) continue;
-      if(PositionGetInteger(POSITION_MAGIC) != InpMagicNumber) continue;
+      if(PositionGetInteger(POSITION_MAGIC) != g_MagicNumber) continue;
       if(PositionGetString(POSITION_SYMBOL) != _Symbol) continue;
       
       long   type   = PositionGetInteger(POSITION_TYPE);
@@ -594,38 +546,50 @@ void CalculateGridStep()
 //+------------------------------------------------------------------+
 void OpenFirstOrder()
 {
-   // ไม้แรกจะเปิดทันทีโดยยึดตามเทรนด์ (ไม่รอ RSI ย่อตัว)
+   //--- Cooldown: รอหลังปิดตระกร้า
+   if(g_lastCloseTime > 0 && (TimeCurrent() - g_lastCloseTime) < g_cooldownSeconds)
+      return;
+   
+   //--- Max Floating Loss protection
+   double balance = AccountInfoDouble(ACCOUNT_BALANCE);
+   if(balance > 0)
+   {
+      double maxFloatLoss = balance * (g_SetHedgeMaxDDPct / 100.0) * 0.5;
+      if(g_totalProfit < -maxFloatLoss)
+         return;
+   }
    
    bool doBuy = false;
    bool doSell = false;
    
    if(g_SetUseTrendFilter)
    {
-      if(g_trendDir == 1) doBuy = true;
-      else if(g_trendDir == -1) doSell = true;
-      else doBuy = true; // ถ้าไซด์เวย์ก็ Buy นำไปก่อน
+      //--- RSI-gated entry: ต้องรอ RSI pullback ก่อนเปิด
+      if(g_trendDir == 1 && g_currentRSI < g_SetRSIBuyLevel) doBuy = true;
+      else if(g_trendDir == -1 && g_currentRSI > g_SetRSISellLevel) doSell = true;
    }
    else
    {
-      // ถ้าไม่ใช้ Filter ให้เปิด Buy ล่าสุดเลย
       doBuy = true;
    }
+   
+   if(!doBuy && !doSell) return;
    
    double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
    double bid = SymbolInfoDouble(_Symbol, SYMBOL_BID);
    double lot = g_SetStartLot;
    
-   if(!IsTradeAllowedSafe(lot)) return; // Safety check before opening
+   if(!IsTradeAllowedSafe(lot)) return;
    
    if(doBuy)
    {
       g_trade.Buy(lot, _Symbol, ask, 0, 0, "SMART L1 BUY");
-      Print("✅ เปิดไม้แรก BUY L1 | Lot: ", lot);
+      Print("✅ เปิดไม้แรก BUY L1 | Lot: ", lot, " | RSI: ", DoubleToString(g_currentRSI,1));
    }
    else if(doSell)
    {
       g_trade.Sell(lot, _Symbol, bid, 0, 0, "SMART L1 SELL");
-      Print("✅ เปิดไม้แรก SELL L1 | Lot: ", lot);
+      Print("✅ เปิดไม้แรก SELL L1 | Lot: ", lot, " | RSI: ", DoubleToString(g_currentRSI,1));
    }
 }
 
@@ -679,7 +643,7 @@ void CheckGridExpansion()
    {
       ulong ticket = PositionGetTicket(i);
       if(ticket <= 0) continue;
-      if(PositionGetInteger(POSITION_MAGIC) != InpMagicNumber) continue;
+      if(PositionGetInteger(POSITION_MAGIC) != g_MagicNumber) continue;
       if(PositionGetString(POSITION_SYMBOL) != _Symbol) continue;
       
       long   type  = PositionGetInteger(POSITION_TYPE);
@@ -738,10 +702,11 @@ void CloseAllOrders()
    {
       ulong ticket = PositionGetTicket(i);
       if(ticket <= 0) continue;
-      if(PositionGetInteger(POSITION_MAGIC) != InpMagicNumber) continue;
+      if(PositionGetInteger(POSITION_MAGIC) != g_MagicNumber) continue;
       if(PositionGetString(POSITION_SYMBOL) != _Symbol) continue;
       g_trade.PositionClose(ticket);
    }
+   g_lastCloseTime = TimeCurrent();
 }
 
 //+------------------------------------------------------------------+
@@ -880,7 +845,7 @@ string GetDailyProfitsJSON()
       if(ticket <= 0) continue;
       
       long magic = HistoryDealGetInteger(ticket, DEAL_MAGIC);
-      if(magic != InpMagicNumber) continue;
+      if(magic != g_MagicNumber) continue;
       
       long entry = HistoryDealGetInteger(ticket, DEAL_ENTRY);
       if(entry != DEAL_ENTRY_OUT) continue; // Only want closed trades
@@ -923,7 +888,7 @@ string GetActiveOrdersJSON()
       if(ticket <= 0) continue;
       
       long magic = PositionGetInteger(POSITION_MAGIC);
-      if(magic != InpMagicNumber) continue;
+      if(magic != g_MagicNumber) continue;
       
       string sym = PositionGetString(POSITION_SYMBOL);
       if(sym != _Symbol) continue;
@@ -981,10 +946,10 @@ void SyncToWebApp()
       
       // XAU settings
       string xauSettingsJson = StringFormat("{\"ema_fast\":%d, \"ema_slow\":%d, \"trend_tf\":%d, \"adx_period\":%d, \"adx_min\":%d, \"rsi_period\":%d, \"rsi_tf\":%d, \"rsi_buy\":%d, \"rsi_sell\":%d, \"risk_reward\":%.1f, \"atr_sl_mult\":%.1f, \"lot_size\":%.2f, \"trail_atr_mult\":%.1f, \"partial_tp\":%s, \"session_start\":%d, \"session_end\":%d}",
-                                            InpXAU_EMA_Fast, InpXAU_EMA_Slow, InpXAU_TrendTF, InpXAU_ADX_Period, InpXAU_ADX_Min,
-                                            InpXAU_RSI_Period, InpXAU_RSI_TF, InpXAU_RSI_Buy, InpXAU_RSI_Sell,
-                                            InpXAU_RiskReward, InpXAU_ATR_SL_Mult, InpXAU_LotSize, InpXAU_TrailATRMult,
-                                            InpXAU_PartialTP ? "true" : "false", InpXAU_SessionStart, InpXAU_SessionEnd);
+                                            g_SetXAU_EMA_Fast, g_SetXAU_EMA_Slow, g_SetXAU_TrendTF, g_SetXAU_ADX_Period, g_SetXAU_ADX_Min,
+                                            g_SetXAU_RSI_Period, g_SetXAU_RSI_TF, g_SetXAU_RSI_Buy, g_SetXAU_RSI_Sell,
+                                            g_SetXAU_RiskReward, g_SetXAU_ATR_SL_Mult, g_SetXAU_LotSize, g_SetXAU_TrailATRMult,
+                                            g_SetXAU_PartialTP ? "true" : "false", g_SetXAU_SessionStart, g_SetXAU_SessionEnd);
       
       payload = StringFormat("{\"account_id\":\"%lld\", \"symbol\":\"%s\", \"strategy\":\"XAU_TREND\", \"equity\":%.2f, \"balance\":%.2f, \"total_profit\":%.2f, \"open_orders\":%d, \"trend_direction\":\"%s\", \"xau_ema21\":%.2f, \"xau_ema55\":%.2f, \"xau_adx\":%.1f, \"xau_rsi\":%.1f, \"xau_atr\":%.2f, \"xau_position\":%s, \"history\":%s, \"active_orders\":%s, \"ea_settings\":%s}",
                               AccountInfoInteger(ACCOUNT_LOGIN), _Symbol, AccountInfoDouble(ACCOUNT_EQUITY), AccountInfoDouble(ACCOUNT_BALANCE), g_totalProfit, g_totalOrders, trendStr,
@@ -1015,9 +980,9 @@ void SyncToWebApp()
       
       // BTC settings
       string btcSettingsJson = StringFormat("{\"ema_fast\":%d, \"ema_slow\":%d, \"trend_tf\":%d, \"rsi_period\":%d, \"rsi_tf\":%d, \"rsi_buy\":%d, \"rsi_sell\":%d, \"risk_reward\":%.1f, \"atr_sl_mult\":%.1f, \"lot_size\":%.2f, \"trail_atr_mult\":%.1f, \"partial_tp\":%s}",
-                                            InpBTC_EMA_Fast, InpBTC_EMA_Slow, InpBTC_TrendTF, InpBTC_RSI_Period, InpBTC_RSI_TF,
-                                            InpBTC_RSI_Buy, InpBTC_RSI_Sell, InpBTC_RiskReward, InpBTC_ATR_SL_Mult,
-                                            InpBTC_LotSize, InpBTC_TrailATRMult, InpBTC_PartialTP ? "true" : "false");
+                                            g_SetBTC_EMA_Fast, g_SetBTC_EMA_Slow, g_SetBTC_TrendTF, g_SetBTC_RSI_Period, g_SetBTC_RSI_TF,
+                                            g_SetBTC_RSI_Buy, g_SetBTC_RSI_Sell, g_SetBTC_RiskReward, g_SetBTC_ATR_SL_Mult,
+                                            g_SetBTC_LotSize, g_SetBTC_TrailATRMult, g_SetBTC_PartialTP ? "true" : "false");
       
       payload = StringFormat("{\"account_id\":\"%lld\", \"symbol\":\"%s\", \"strategy\":\"BTC_MOMENTUM\", \"equity\":%.2f, \"balance\":%.2f, \"total_profit\":%.2f, \"open_orders\":%d, \"trend_direction\":\"%s\", \"btc_ema50\":%.2f, \"btc_ema200\":%.2f, \"btc_rsi\":%.1f, \"btc_atr\":%.2f, \"btc_position\":%s, \"history\":%s, \"active_orders\":%s, \"ea_settings\":%s}",
                               AccountInfoInteger(ACCOUNT_LOGIN), _Symbol, AccountInfoDouble(ACCOUNT_EQUITY), AccountInfoDouble(ACCOUNT_BALANCE), g_totalProfit, g_totalOrders, trendStr,
@@ -1045,29 +1010,20 @@ void SyncToWebApp()
    
    int res = WebRequest("POST", LOCAL_API_URL, headers, 5000, post, result, resHeaders);
    
-   // We ignore output to avoid spamming the MT5 log, even on errors like 1001
-   // if (res > 0 && res != 200 && res != 201) {
-   //    Print("Local API Sync Err: ", res);
-   // }
+   //--- Parse commands from response
+   if(res == 200 || res == 201)
+   {
+      string jsonResp = CharArrayToString(result);
+      if(StringLen(jsonResp) > 10)
+         ProcessCommands(jsonResp);
+   }
 }
 
 //+------------------------------------------------------------------+
-//| ===== Check Pending Commands from Web App =====                   |
+//| ===== Process Commands from Web Server Response =====              |
 //+------------------------------------------------------------------+
-void CheckPendingCommands()
+void ProcessCommands(string jsonResp)
 {
-   string url = "http://127.0.0.1:3000/api/ea-commands?account_id=" + IntegerToString(AccountInfoInteger(ACCOUNT_LOGIN)) + "&symbol=" + _Symbol;
-   string headers = "";
-   char post[], result[];
-   string resHeaders;
-   
-   int res = WebRequest("GET", url, headers, 1000, post, result, resHeaders);
-   if(res == 200)
-   {
-      string jsonResp = CharArrayToString(result);
-      if(StringLen(jsonResp) > 10) // Basic check if it's not just "[]"
-      {
-         // Very basic JSON parser for [{"action":"close", "ticket":123456}]
          int actionIndex = StringFind(jsonResp, "\"action\":");
          while(actionIndex >= 0)
          {
@@ -1125,6 +1081,69 @@ void CheckPendingCommands()
                   idx = StringFind(jsonResp, "\"trail_step\":", setIndex);
                   if(idx > 0) g_SetBasketTrailStepUSD = StringToDouble(StringSubstr(jsonResp, idx+13, StringFind(jsonResp, "}", idx)-idx-13));
                   
+                  idx = StringFind(jsonResp, ""use_auto_hedge":", setIndex);
+                  if(idx > 0) g_SetUseAutoHedge = (StringFind(jsonResp, "true", idx) < StringFind(jsonResp, ",", idx));
+                  idx = StringFind(jsonResp, ""hedge_max_dd":", setIndex);
+                  if(idx > 0) g_SetHedgeMaxDDPct = StringToDouble(StringSubstr(jsonResp, idx+15, StringFind(jsonResp, ",", idx)-idx-15));
+                  idx = StringFind(jsonResp, ""use_reverse_grid":", setIndex);
+                  if(idx > 0) g_SetUseReverseGrid = (StringFind(jsonResp, "true", idx) < StringFind(jsonResp, ",", idx));
+                  idx = StringFind(jsonResp, ""recovery_target_usd":", setIndex);
+                  if(idx > 0) g_SetRecoveryTargetUSD = StringToDouble(StringSubstr(jsonResp, idx+22, StringFind(jsonResp, ",", idx)-idx-22));
+                  idx = StringFind(jsonResp, ""cooldown_seconds":", setIndex);
+                  if(idx > 0) g_cooldownSeconds = (int)StringToInteger(StringSubstr(jsonResp, idx+19, StringFind(jsonResp, ",", idx)-idx-19));
+                  
+                  // BTC Settings
+                  idx = StringFind(jsonResp, ""btc_ema_fast":", setIndex);
+                  if(idx > 0) g_SetBTC_EMA_Fast = (int)StringToInteger(StringSubstr(jsonResp, idx+15, StringFind(jsonResp, ",", idx)-idx-15));
+                  idx = StringFind(jsonResp, ""btc_ema_slow":", setIndex);
+                  if(idx > 0) g_SetBTC_EMA_Slow = (int)StringToInteger(StringSubstr(jsonResp, idx+15, StringFind(jsonResp, ",", idx)-idx-15));
+                  idx = StringFind(jsonResp, ""btc_rsi_period":", setIndex);
+                  if(idx > 0) g_SetBTC_RSI_Period = (int)StringToInteger(StringSubstr(jsonResp, idx+17, StringFind(jsonResp, ",", idx)-idx-17));
+                  idx = StringFind(jsonResp, ""btc_rsi_buy":", setIndex);
+                  if(idx > 0) g_SetBTC_RSI_Buy = (int)StringToInteger(StringSubstr(jsonResp, idx+14, StringFind(jsonResp, ",", idx)-idx-14));
+                  idx = StringFind(jsonResp, ""btc_rsi_sell":", setIndex);
+                  if(idx > 0) g_SetBTC_RSI_Sell = (int)StringToInteger(StringSubstr(jsonResp, idx+15, StringFind(jsonResp, ",", idx)-idx-15));
+                  idx = StringFind(jsonResp, ""btc_risk_reward":", setIndex);
+                  if(idx > 0) g_SetBTC_RiskReward = StringToDouble(StringSubstr(jsonResp, idx+18, StringFind(jsonResp, ",", idx)-idx-18));
+                  idx = StringFind(jsonResp, ""btc_atr_sl_mult":", setIndex);
+                  if(idx > 0) g_SetBTC_ATR_SL_Mult = StringToDouble(StringSubstr(jsonResp, idx+18, StringFind(jsonResp, ",", idx)-idx-18));
+                  idx = StringFind(jsonResp, ""btc_lot_size":", setIndex);
+                  if(idx > 0) g_SetBTC_LotSize = StringToDouble(StringSubstr(jsonResp, idx+15, StringFind(jsonResp, ",", idx)-idx-15));
+                  idx = StringFind(jsonResp, ""btc_trail_atr_mult":", setIndex);
+                  if(idx > 0) g_SetBTC_TrailATRMult = StringToDouble(StringSubstr(jsonResp, idx+21, StringFind(jsonResp, ",", idx)-idx-21));
+                  idx = StringFind(jsonResp, ""btc_partial_tp":", setIndex);
+                  if(idx > 0) g_SetBTC_PartialTP = (StringFind(jsonResp, "true", idx) < StringFind(jsonResp, ",", idx));
+                  
+                  // XAU Settings
+                  idx = StringFind(jsonResp, ""xau_ema_fast":", setIndex);
+                  if(idx > 0) g_SetXAU_EMA_Fast = (int)StringToInteger(StringSubstr(jsonResp, idx+15, StringFind(jsonResp, ",", idx)-idx-15));
+                  idx = StringFind(jsonResp, ""xau_ema_slow":", setIndex);
+                  if(idx > 0) g_SetXAU_EMA_Slow = (int)StringToInteger(StringSubstr(jsonResp, idx+15, StringFind(jsonResp, ",", idx)-idx-15));
+                  idx = StringFind(jsonResp, ""xau_adx_period":", setIndex);
+                  if(idx > 0) g_SetXAU_ADX_Period = (int)StringToInteger(StringSubstr(jsonResp, idx+17, StringFind(jsonResp, ",", idx)-idx-17));
+                  idx = StringFind(jsonResp, ""xau_adx_min":", setIndex);
+                  if(idx > 0) g_SetXAU_ADX_Min = (int)StringToInteger(StringSubstr(jsonResp, idx+14, StringFind(jsonResp, ",", idx)-idx-14));
+                  idx = StringFind(jsonResp, ""xau_rsi_period":", setIndex);
+                  if(idx > 0) g_SetXAU_RSI_Period = (int)StringToInteger(StringSubstr(jsonResp, idx+17, StringFind(jsonResp, ",", idx)-idx-17));
+                  idx = StringFind(jsonResp, ""xau_rsi_buy":", setIndex);
+                  if(idx > 0) g_SetXAU_RSI_Buy = (int)StringToInteger(StringSubstr(jsonResp, idx+14, StringFind(jsonResp, ",", idx)-idx-14));
+                  idx = StringFind(jsonResp, ""xau_rsi_sell":", setIndex);
+                  if(idx > 0) g_SetXAU_RSI_Sell = (int)StringToInteger(StringSubstr(jsonResp, idx+15, StringFind(jsonResp, ",", idx)-idx-15));
+                  idx = StringFind(jsonResp, ""xau_risk_reward":", setIndex);
+                  if(idx > 0) g_SetXAU_RiskReward = StringToDouble(StringSubstr(jsonResp, idx+18, StringFind(jsonResp, ",", idx)-idx-18));
+                  idx = StringFind(jsonResp, ""xau_atr_sl_mult":", setIndex);
+                  if(idx > 0) g_SetXAU_ATR_SL_Mult = StringToDouble(StringSubstr(jsonResp, idx+18, StringFind(jsonResp, ",", idx)-idx-18));
+                  idx = StringFind(jsonResp, ""xau_lot_size":", setIndex);
+                  if(idx > 0) g_SetXAU_LotSize = StringToDouble(StringSubstr(jsonResp, idx+15, StringFind(jsonResp, ",", idx)-idx-15));
+                  idx = StringFind(jsonResp, ""xau_trail_atr_mult":", setIndex);
+                  if(idx > 0) g_SetXAU_TrailATRMult = StringToDouble(StringSubstr(jsonResp, idx+21, StringFind(jsonResp, ",", idx)-idx-21));
+                  idx = StringFind(jsonResp, ""xau_partial_tp":", setIndex);
+                  if(idx > 0) g_SetXAU_PartialTP = (StringFind(jsonResp, "true", idx) < StringFind(jsonResp, ",", idx));
+                  idx = StringFind(jsonResp, ""xau_session_start":", setIndex);
+                  if(idx > 0) g_SetXAU_SessionStart = (int)StringToInteger(StringSubstr(jsonResp, idx+20, StringFind(jsonResp, ",", idx)-idx-20));
+                  idx = StringFind(jsonResp, ""xau_session_end":", setIndex);
+                  if(idx > 0) g_SetXAU_SessionEnd = (int)StringToInteger(StringSubstr(jsonResp, idx+18, StringFind(jsonResp, ",", idx)-idx-18));
+                  
                   Print("✅ All Custom EA Settings Synced with Web Server Successfully.");
                   g_currentGridStepPt = g_SetFixedGridStep * _Point;
                }
@@ -1143,7 +1162,7 @@ void CheckPendingCommands()
                {
                   ulong ticket = PositionGetTicket(i);
                   if(ticket <= 0) continue;
-                  if(PositionGetInteger(POSITION_MAGIC) != InpMagicNumber) continue;
+                  if(PositionGetInteger(POSITION_MAGIC) != g_MagicNumber) continue;
                   if(PositionGetString(POSITION_SYMBOL) != _Symbol) continue;
                   double profit = PositionGetDouble(POSITION_PROFIT) + PositionGetDouble(POSITION_SWAP);
                   if(profit > 0)
@@ -1235,8 +1254,6 @@ void CheckPendingCommands()
             }
             
             actionIndex = nextActionIdx;
-         }
-      }
    }
 }
 
@@ -1249,9 +1266,9 @@ void UpdateDashboardOnChart()
    string gridType = g_SetUseDynamicStep ? "DYNAMIC (ATR)" : "FIXED";
    double stepInPoints = g_currentGridStepPt / _Point;
    
-   string lines[25];
-   color textColors[25];
-   for(int c=0; c<25; c++) textColors[c] = clrBlack;
+   string lines[30];
+   color textColors[30];
+   for(int c=0; c<30; c++) textColors[c] = clrBlack;
    
    // --- Calculate Next Grid Step Info ---
    string nextGridStr = "Next Grid: N/A";
@@ -1263,7 +1280,7 @@ void UpdateDashboardOnChart()
       {
          ulong ticket = PositionGetTicket(i);
          if(ticket <= 0) continue;
-         if(PositionGetInteger(POSITION_MAGIC) != InpMagicNumber) continue;
+         if(PositionGetInteger(POSITION_MAGIC) != g_MagicNumber) continue;
          if(PositionGetString(POSITION_SYMBOL) != _Symbol) continue;
          long type = PositionGetInteger(POSITION_TYPE);
          double oPrice = PositionGetDouble(POSITION_PRICE_OPEN);
@@ -1331,8 +1348,9 @@ void UpdateDashboardOnChart()
    string revStr = g_SetUseReverseGrid ? "ON" : "OFF";
    lines[idx] = "Hedge: " + hedgeStr + " | MaxDD: " + DoubleToString(g_SetHedgeMaxDDPct, 1) + "%"; idx++;
    lines[idx] = "RevGrid: " + revStr + " | Recovery: $" + DoubleToString(g_SetRecoveryTargetUSD, 2); idx++;
+   lines[idx] = "Cooldown: " + IntegerToString(g_cooldownSeconds) + "s"; idx++;
    
-   lines[idx] = "Magic: " + IntegerToString(InpMagicNumber);
+   lines[idx] = "Magic: " + IntegerToString(g_MagicNumber);
    textColors[idx] = C'140,140,160'; idx++;
    
    int totalLines = idx;
@@ -1342,6 +1360,7 @@ void UpdateDashboardOnChart()
    int lineHeight = 18;
    int panelWidth = 380;
    int panelHeight = (totalLines * lineHeight) + (panelPadding * 2) + 4;
+   if(panelHeight < 150) panelHeight = 150;
    
    string panelName = g_prefix + "PANEL_BG";
    if(ObjectFind(0, panelName) < 0) {
@@ -1376,7 +1395,7 @@ void UpdateDashboardOnChart()
       ObjectSetInteger(0, lblName, OBJPROP_COLOR, txtColor);
    }
    
-   for(int j=totalLines; j<25; j++)
+   for(int j=totalLines; j<30; j++)
    {
       string lblName = g_prefix+"LBL_"+IntegerToString(j);
       if(ObjectFind(0, lblName) >= 0) ObjectDelete(0, lblName);
@@ -1424,7 +1443,7 @@ void OnTickXAU()
    MqlDateTime dt;
    TimeGMT(dt);
    int gmtHour = dt.hour;
-   bool inSession = (gmtHour >= InpXAU_SessionStart && gmtHour < InpXAU_SessionEnd);
+   bool inSession = (gmtHour >= g_SetXAU_SessionStart && gmtHour < g_SetXAU_SessionEnd);
    
    //--- 5) Check if our XAU ticket is still open
    bool hasPosition = false;
@@ -1437,10 +1456,10 @@ void OnTickXAU()
          if(posProfit > g_xauHighWater) g_xauHighWater = posProfit;
          
          double slDist = g_xauEntrySL;
-         double trailStep = g_xauATR * InpXAU_TrailATRMult;
+         double trailStep = g_xauATR * g_SetXAU_TrailATRMult;
          
          //--- Partial TP: close 50% at 1:1 RR level
-         if(InpXAU_PartialTP && !g_xauPartialDone)
+         if(g_SetXAU_PartialTP && !g_xauPartialDone)
          {
             double tpDist = slDist * 1.0; // Partial at 1:1 RR
             long posType = PositionGetInteger(POSITION_TYPE);
@@ -1499,17 +1518,17 @@ void OnTickXAU()
    }
    
    //--- 6) Entry Signal (no position open, in session, ADX confirms trend)
-   if(!hasPosition && g_xauATR > 0 && inSession && g_xauADX >= InpXAU_ADX_Min)
+   if(!hasPosition && g_xauATR > 0 && inSession && g_xauADX >= g_SetXAU_ADX_Min)
    {
-      double slDist = g_xauATR * InpXAU_ATR_SL_Mult;
-      double tpDist = slDist * InpXAU_RiskReward;
+      double slDist = g_xauATR * g_SetXAU_ATR_SL_Mult;
+      double tpDist = slDist * g_SetXAU_RiskReward;
       
       // BUY: Uptrend (EMA21 > EMA55) + ADX strong + RSI pullback below buy level
-      if(g_xauTrend == 1 && g_xauRSI < InpXAU_RSI_Buy)
+      if(g_xauTrend == 1 && g_xauRSI < g_SetXAU_RSI_Buy)
       {
          double sl = ask - slDist;
          double tp = ask + tpDist;
-         if(g_trade.Buy(InpXAU_LotSize, _Symbol, ask, sl, tp, "XAU_TREND_BUY"))
+         if(g_trade.Buy(g_SetXAU_LotSize, _Symbol, ask, sl, tp, "XAU_TREND_BUY"))
          {
             g_xauTicket = g_trade.ResultOrder();
             g_xauEntrySL = slDist;
@@ -1523,11 +1542,11 @@ void OnTickXAU()
          }
       }
       // SELL: Downtrend (EMA21 < EMA55) + ADX strong + RSI overbought above sell level
-      else if(g_xauTrend == -1 && g_xauRSI > InpXAU_RSI_Sell)
+      else if(g_xauTrend == -1 && g_xauRSI > g_SetXAU_RSI_Sell)
       {
          double sl = bid + slDist;
          double tp = bid - tpDist;
-         if(g_trade.Sell(InpXAU_LotSize, _Symbol, bid, sl, tp, "XAU_TREND_SELL"))
+         if(g_trade.Sell(g_SetXAU_LotSize, _Symbol, bid, sl, tp, "XAU_TREND_SELL"))
          {
             g_xauTicket = g_trade.ResultOrder();
             g_xauEntrySL = slDist;
@@ -1557,11 +1576,11 @@ void UpdateXAUDashboard()
    MqlDateTime dt;
    TimeGMT(dt);
    int gmtHour = dt.hour;
-   bool inSession = (gmtHour >= InpXAU_SessionStart && gmtHour < InpXAU_SessionEnd);
+   bool inSession = (gmtHour >= g_SetXAU_SessionStart && gmtHour < g_SetXAU_SessionEnd);
    
-   string lines[18];
-   color textColors[18];
-   for(int c=0; c<18; c++) textColors[c] = C'220,220,230';
+   string lines[25];
+   color textColors[25];
+   for(int c=0; c<25; c++) textColors[c] = C'220,220,230';
    
    int idx = 0;
    lines[idx] = "==== XAU SMART TREND (" + _Symbol + ") ====";
@@ -1571,8 +1590,8 @@ void UpdateXAUDashboard()
    textColors[idx] = (g_xauTrend == 1) ? clrLime : (g_xauTrend == -1) ? clrRed : clrGray; idx++;
    
    lines[idx] = "EMA21: " + DoubleToString(g_xauEMA21, _Digits) + " | EMA55: " + DoubleToString(g_xauEMA55, _Digits); idx++;
-   lines[idx] = "ADX: " + DoubleToString(g_xauADX, 1) + " (min " + IntegerToString(InpXAU_ADX_Min) + ")";
-   textColors[idx] = (g_xauADX >= InpXAU_ADX_Min) ? clrLime : clrOrangeRed; idx++;
+   lines[idx] = "ADX: " + DoubleToString(g_xauADX, 1) + " (min " + IntegerToString(g_SetXAU_ADX_Min) + ")";
+   textColors[idx] = (g_xauADX >= g_SetXAU_ADX_Min) ? clrLime : clrOrangeRed; idx++;
    lines[idx] = "RSI: " + DoubleToString(g_xauRSI, 1) + " | ATR: " + DoubleToString(g_xauATR, _Digits); idx++;
    
    lines[idx] = "Session: " + (inSession ? "ACTIVE (London+NY)" : "CLOSED");
@@ -1603,15 +1622,19 @@ void UpdateXAUDashboard()
       textColors[idx] = clrGray; idx++;
       string sig = "Waiting...";
       if(!inSession) sig = "Session closed";
-      else if(g_xauADX < InpXAU_ADX_Min) sig = "ADX too low (" + DoubleToString(g_xauADX,1) + ")";
-      else if(g_xauTrend == 1) sig = "Up, RSI=" + DoubleToString(g_xauRSI,1) + " (need<" + IntegerToString(InpXAU_RSI_Buy) + ")";
-      else if(g_xauTrend == -1) sig = "Dn, RSI=" + DoubleToString(g_xauRSI,1) + " (need>" + IntegerToString(InpXAU_RSI_Sell) + ")";
+      else if(g_xauADX < g_SetXAU_ADX_Min) sig = "ADX too low (" + DoubleToString(g_xauADX,1) + ")";
+      else if(g_xauTrend == 1) sig = "Up, RSI=" + DoubleToString(g_xauRSI,1) + " (need<" + IntegerToString(g_SetXAU_RSI_Buy) + ")";
+      else if(g_xauTrend == -1) sig = "Dn, RSI=" + DoubleToString(g_xauRSI,1) + " (need>" + IntegerToString(g_SetXAU_RSI_Sell) + ")";
       lines[idx] = sig; idx++;
    }
    
-   lines[idx] = "---- Settings ----";
-   textColors[idx] = C'140,140,160'; idx++;
-   lines[idx] = "Lot:" + DoubleToString(InpXAU_LotSize,2) + " RR:1:" + DoubleToString(InpXAU_RiskReward,1) + " SL:" + DoubleToString(InpXAU_ATR_SL_Mult,1) + "xATR"; idx++;
+   lines[idx] = "---- Active Settings ----";
+   textColors[idx] = clrDodgerBlue; idx++;
+   lines[idx] = "Lot:" + DoubleToString(g_SetXAU_LotSize,2) + " RR:1:" + DoubleToString(g_SetXAU_RiskReward,1) + " SL:" + DoubleToString(g_SetXAU_ATR_SL_Mult,1) + "xATR"; idx++;
+   lines[idx] = "EMA: " + IntegerToString(g_SetXAU_EMA_Fast) + "/" + IntegerToString(g_SetXAU_EMA_Slow) + " | ADX>" + IntegerToString(g_SetXAU_ADX_Min); idx++;
+   lines[idx] = "RSI(" + IntegerToString(g_SetXAU_RSI_Period) + ") B<" + IntegerToString(g_SetXAU_RSI_Buy) + " S>" + IntegerToString(g_SetXAU_RSI_Sell); idx++;
+   lines[idx] = "Trail: " + DoubleToString(g_SetXAU_TrailATRMult,1) + "xATR | Partial TP: " + (g_SetXAU_PartialTP ? "ON" : "OFF"); idx++;
+   lines[idx] = "Session: " + IntegerToString(g_SetXAU_SessionStart) + ":00 - " + IntegerToString(g_SetXAU_SessionEnd) + ":00 GMT"; idx++;
    
    int totalLines = idx;
    
@@ -1619,6 +1642,7 @@ void UpdateXAUDashboard()
    int lineHeight = 18;
    int panelWidth = 420;
    int panelHeight = (totalLines * lineHeight) + (panelPadding * 2) + 4;
+   if(panelHeight < 150) panelHeight = 150;
    
    string panelName = g_prefix + "PANEL_BG";
    if(ObjectFind(0, panelName) < 0) {
@@ -1651,7 +1675,7 @@ void UpdateXAUDashboard()
       ObjectSetInteger(0, lblName, OBJPROP_COLOR, textColors[i]);
    }
    
-   for(int j=totalLines; j<25; j++)
+   for(int j=totalLines; j<30; j++)
    {
       string lblName = g_prefix+"LBL_"+IntegerToString(j);
       if(ObjectFind(0, lblName) >= 0) ObjectDelete(0, lblName);
@@ -1700,12 +1724,12 @@ void OnTickBTC()
          if(posProfit > g_btcHighWater) g_btcHighWater = posProfit;
          
          double slDist = g_btcEntrySL;
-         double trailStep = g_btcATR * InpBTC_TrailATRMult;
+         double trailStep = g_btcATR * g_SetBTC_TrailATRMult;
          
          //--- Partial TP: close 50% at TP level
-         if(InpBTC_PartialTP && !g_btcPartialDone)
+         if(g_SetBTC_PartialTP && !g_btcPartialDone)
          {
-            double tpDist = slDist * InpBTC_RiskReward;
+            double tpDist = slDist * g_SetBTC_RiskReward;
             long posType = PositionGetInteger(POSITION_TYPE);
             double openPrice = PositionGetDouble(POSITION_PRICE_OPEN);
             double currentPrice = (posType == POSITION_TYPE_BUY) ? bid : ask;
@@ -1764,15 +1788,15 @@ void OnTickBTC()
    //--- 6) Entry Signal (no position open)
    if(!hasPosition && g_btcATR > 0)
    {
-      double slDist = g_btcATR * InpBTC_ATR_SL_Mult;
-      double tpDist = slDist * InpBTC_RiskReward;
+      double slDist = g_btcATR * g_SetBTC_ATR_SL_Mult;
+      double tpDist = slDist * g_SetBTC_RiskReward;
       
       // BUY: Uptrend + RSI pullback
-      if(g_btcTrend == 1 && g_btcRSI < InpBTC_RSI_Buy)
+      if(g_btcTrend == 1 && g_btcRSI < g_SetBTC_RSI_Buy)
       {
          double sl = ask - slDist;
          double tp = ask + tpDist;
-         if(g_trade.Buy(InpBTC_LotSize, _Symbol, ask, sl, tp, "BTC_MOM_BUY"))
+         if(g_trade.Buy(g_SetBTC_LotSize, _Symbol, ask, sl, tp, "BTC_MOM_BUY"))
          {
             g_btcTicket = g_trade.ResultOrder();
             g_btcEntrySL = slDist;
@@ -1782,11 +1806,11 @@ void OnTickBTC()
          }
       }
       // SELL: Downtrend + RSI overbought
-      else if(g_btcTrend == -1 && g_btcRSI > InpBTC_RSI_Sell)
+      else if(g_btcTrend == -1 && g_btcRSI > g_SetBTC_RSI_Sell)
       {
          double sl = bid + slDist;
          double tp = bid - tpDist;
-         if(g_trade.Sell(InpBTC_LotSize, _Symbol, bid, sl, tp, "BTC_MOM_SELL"))
+         if(g_trade.Sell(g_SetBTC_LotSize, _Symbol, bid, sl, tp, "BTC_MOM_SELL"))
          {
             g_btcTicket = g_trade.ResultOrder();
             g_btcEntrySL = slDist;
@@ -1847,14 +1871,17 @@ void UpdateBTCDashboard()
       lines[idx] = "---- No Position ----";
       textColors[idx] = clrGray; idx++;
       string sig = "Waiting...";
-      if(g_btcTrend == 1) sig = "Up, RSI=" + DoubleToString(g_btcRSI,1) + " (need<" + IntegerToString(InpBTC_RSI_Buy) + ")";
-      else if(g_btcTrend == -1) sig = "Dn, RSI=" + DoubleToString(g_btcRSI,1) + " (need>" + IntegerToString(InpBTC_RSI_Sell) + ")";
+      if(g_btcTrend == 1) sig = "Up, RSI=" + DoubleToString(g_btcRSI,1) + " (need<" + IntegerToString(g_SetBTC_RSI_Buy) + ")";
+      else if(g_btcTrend == -1) sig = "Dn, RSI=" + DoubleToString(g_btcRSI,1) + " (need>" + IntegerToString(g_SetBTC_RSI_Sell) + ")";
       lines[idx] = sig; idx++;
    }
    
-   lines[idx] = "---- Settings ----";
-   textColors[idx] = C'140,140,160'; idx++;
-   lines[idx] = "Lot:" + DoubleToString(InpBTC_LotSize,2) + " RR:1:" + DoubleToString(InpBTC_RiskReward,1) + " SL:" + DoubleToString(InpBTC_ATR_SL_Mult,1) + "xATR"; idx++;
+   lines[idx] = "---- Active Settings ----";
+   textColors[idx] = clrDodgerBlue; idx++;
+   lines[idx] = "Lot:" + DoubleToString(g_SetBTC_LotSize,2) + " RR:1:" + DoubleToString(g_SetBTC_RiskReward,1) + " SL:" + DoubleToString(g_SetBTC_ATR_SL_Mult,1) + "xATR"; idx++;
+   lines[idx] = "EMA: " + IntegerToString(g_SetBTC_EMA_Fast) + "/" + IntegerToString(g_SetBTC_EMA_Slow); idx++;
+   lines[idx] = "RSI(" + IntegerToString(g_SetBTC_RSI_Period) + ") B<" + IntegerToString(g_SetBTC_RSI_Buy) + " S>" + IntegerToString(g_SetBTC_RSI_Sell); idx++;
+   lines[idx] = "Trail: " + DoubleToString(g_SetBTC_TrailATRMult,1) + "xATR | Partial TP: " + (g_SetBTC_PartialTP ? "ON" : "OFF"); idx++;
    
    int totalLines = idx;
    
@@ -1862,6 +1889,7 @@ void UpdateBTCDashboard()
    int lineHeight = 18;
    int panelWidth = 400;
    int panelHeight = (totalLines * lineHeight) + (panelPadding * 2) + 4;
+   if(panelHeight < 150) panelHeight = 150;
    
    string panelName = g_prefix + "PANEL_BG";
    if(ObjectFind(0, panelName) < 0) {
@@ -1894,7 +1922,7 @@ void UpdateBTCDashboard()
       ObjectSetInteger(0, lblName, OBJPROP_COLOR, textColors[i]);
    }
    
-   for(int j=totalLines; j<25; j++)
+   for(int j=totalLines; j<30; j++)
    {
       string lblName = g_prefix+"LBL_"+IntegerToString(j);
       if(ObjectFind(0, lblName) >= 0) ObjectDelete(0, lblName);
