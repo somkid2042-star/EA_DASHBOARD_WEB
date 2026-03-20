@@ -16,22 +16,35 @@ jobs:
         uses: actions/checkout@v4
 
       # ===== MQ5 Compilation using proven CI action =====
+      - name: Install MetaTrader 5
+        run: |
+          # Download the official MT5 installer
+          Invoke-WebRequest -Uri https://download.mql5.com/cdn/web/metaquotes.software.corp/mt5/mt5setup.exe -OutFile mt5setup.exe
+          # Install silently to a predictable path
+          Start-Process -FilePath ".\mt5setup.exe" -ArgumentList "/auto", "/path:C:\MT5" -Wait
+          # Wait a little bit for any background processes
+          Start-Sleep -Seconds 15
+        shell: powershell
+
       - name: Compile X_Grid.mq5
-        uses: fx31337/mql-compile-action@master
+        uses: fx31337/mql-compile-action@v2
         with:
-          path: X_Grid.mq5
+          mt-path: 'C:\MT5'
           init-platform: true
+          path: X_Grid.mq5
           verbose: true
 
       - name: Compile X_BTC.mq5
-        uses: fx31337/mql-compile-action@master
+        uses: fx31337/mql-compile-action@v2
         with:
+          mt-path: 'C:\MT5'
           path: X_BTC.mq5
           verbose: true
 
       - name: Compile X_XAU.mq5
-        uses: fx31337/mql-compile-action@master
+        uses: fx31337/mql-compile-action@v2
         with:
+          mt-path: 'C:\MT5'
           path: X_XAU.mq5
           verbose: true
 
