@@ -15,105 +15,44 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ===== MQ5 Compilation =====
-      - name: Download MetaTrader 5
-        run: |
-          Invoke-WebRequest -Uri "https://download.mql5.com/cdn/web/metaquotes.software.corp/mt5/mt5setup.exe" -OutFile "mt5setup.exe"
-          Start-Process -FilePath ".\mt5setup.exe" -ArgumentList "/auto" -Wait
-          # Wait for installation to complete
-          Start-Sleep -Seconds 30
+      # ===== MQ5 Compilation using proven CI action =====
+      - name: Compile X_Grid.mq5
+        uses: fx31337/mql-compile-action@master
+        with:
+          path: X_Grid.mq5
+          verbose: true
 
-      - name: Find MetaEditor and Compile MQ5
+      - name: Compile X_BTC.mq5
+        uses: fx31337/mql-compile-action@master
+        with:
+          path: X_BTC.mq5
+          verbose: true
+
+      - name: Compile X_XAU.mq5
+        uses: fx31337/mql-compile-action@master
+        with:
+          path: X_XAU.mq5
+          verbose: true
+
+      - name: Verify compiled EA files
         run: |
-          # Find metaeditor64.exe
-          $metaeditor = Get-ChildItem -Path "C:\Program Files" -Filter "metaeditor64.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-          if (-not $metaeditor) {
-            $metaeditor = Get-ChildItem -Path "$env:APPDATA" -Filter "metaeditor64.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-          }
-          if (-not $metaeditor) {
-            $metaeditor = Get-ChildItem -Path "C:\" -Filter "metaeditor64.exe" -Recurse -Depth 4 -ErrorAction SilentlyContinue | Select-Object -First 1
-          }
-          if (-not $metaeditor) {
-            Write-Error "metaeditor64.exe not found!"
-            exit 1
-          }
-          Write-Host "Found MetaEditor at: $($metaeditor.FullName)"
-          
-          # Find the terminal data folder that has MQL5/Include (where Trade.mqh lives)
-          $terminalBase = "$env:APPDATA\MetaQuotes\Terminal"
-          $mql5Experts = $null
-          $includeDir = $null
-          
-          if (Test-Path $terminalBase) {
-            Get-ChildItem -Path $terminalBase -Directory | ForEach-Object {
-              $testInclude = Join-Path $_.FullName "MQL5\Include"
-              $testExperts = Join-Path $_.FullName "MQL5\Experts"
-              Write-Host "Checking: $($_.FullName) -> Include exists: $(Test-Path $testInclude)"
-              if ((Test-Path $testInclude) -and (-not $mql5Experts)) {
-                $mql5Experts = $testExperts
-                $includeDir = $testInclude
+          $eaFiles = @("X_Grid.ex5", "X_BTC.ex5", "X_XAU.ex5")
+          $allFound = $true
+          foreach ($ea in $eaFiles) {
+            $found = Get-ChildItem -Path . -Filter $ea -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($found) {
+              $fileSize = $found.Length
+              Write-Host "✅ $ea found: $($found.FullName) ($fileSize bytes)"
+              # Copy to workspace root if not already there
+              if ($found.DirectoryName -ne (Get-Location).Path) {
+                Copy-Item $found.FullName . -Force
               }
-            }
-          }
-          
-          # Fallback: use the MT5 installation dir itself
-          if (-not $mql5Experts) {
-            $mt5InstallDir = $metaeditor.Directory.Parent.FullName
-            $testExperts = Join-Path $mt5InstallDir "MQL5\Experts"
-            $testInclude = Join-Path $mt5InstallDir "MQL5\Include"
-            Write-Host "Fallback MT5 dir: $mt5InstallDir -> Include exists: $(Test-Path $testInclude)"
-            if (Test-Path $testInclude) {
-              $mql5Experts = $testExperts
-              $includeDir = $testInclude
-            }
-          }
-          
-          if (-not $mql5Experts) {
-            Write-Error "Could not find MQL5 directory with Include folder!"
-            exit 1
-          }
-          
-          if (-not (Test-Path $mql5Experts)) {
-            New-Item -ItemType Directory -Path $mql5Experts -Force | Out-Null
-          }
-          Write-Host "MQL5 Experts dir: $mql5Experts"
-          Write-Host "MQL5 Include dir: $includeDir"
-          
-          # Verify Trade.mqh exists
-          $tradeMqh = Join-Path $includeDir "Trade\Trade.mqh"
-          Write-Host "Trade.mqh exists: $(Test-Path $tradeMqh)"
-          
-          # Copy MQ5 files to the terminal's MQL5/Experts/
-          $eaFiles = @("X_Grid.mq5", "X_BTC.mq5", "X_XAU.mq5")
-          foreach ($ea in $eaFiles) {
-            Copy-Item $ea $mql5Experts -Force
-            Write-Host "Copied $ea to $mql5Experts"
-          }
-          
-          # Compile all 3 EA files
-          $allSuccess = $true
-          foreach ($ea in $eaFiles) {
-            $mq5Path = Join-Path $mql5Experts $ea
-            Write-Host "Compiling: $mq5Path"
-            & $metaeditor.FullName /compile:"$mq5Path" /log /inc:"$(Split-Path $includeDir -Parent)"
-            Start-Sleep -Seconds 15
-            
-            $ex5Name = [System.IO.Path]::ChangeExtension($ea, ".ex5")
-            $ex5Path = Join-Path $mql5Experts $ex5Name
-            if (Test-Path $ex5Path) {
-              $fileSize = (Get-Item $ex5Path).Length
-              Write-Host "✅ $ea compiled successfully ($fileSize bytes)"
-              Copy-Item $ex5Path . -Force
             } else {
-              Write-Host "⚠️ Checking log for $ea..."
-              $logPath = Join-Path $mql5Experts ([System.IO.Path]::ChangeExtension($ea, ".log"))
-              if (Test-Path $logPath) { Get-Content $logPath }
-              Write-Error "❌ Compilation failed for $ea!"
-              $allSuccess = $false
+              Write-Error "❌ $ea not found!"
+              $allFound = $false
             }
           }
-          
-          if (-not $allSuccess) { exit 1 }
+          if (-not $allFound) { exit 1 }
 
       # ===== Rust Server Build =====
       - name: Install Rust
