@@ -16,8 +16,8 @@ use mime_guess::from_path;
 
 use fltk::{
     app, enums::{Color, Font, FrameType, Align},
-    frame::Frame, group::Pack, prelude::*, window::DoubleWindow,
-    text::{TextDisplay, TextBuffer}, image::JpegImage,
+    frame::Frame, prelude::*, window::DoubleWindow,
+    image::JpegImage,
 };
 
 // Embed the entire www/ folder content into the .exe
@@ -386,9 +386,6 @@ async fn preload_settings(preloaded_state: Arc<Mutex<HashMap<String, Value>>>, l
 }
 
 // ---------------- FLTK APPLICATION ----------------
-const DARK_BG: Color = Color::from_hex(0x1e1e1e);
-const PANEL_BG: Color = Color::from_hex(0x2d2d2d);
-const TEXT_COLOR: Color = Color::from_hex(0xe0e0e0);
 const ACCENT: Color = Color::from_hex(0x00a86b); // Neon Green
 
 #[cfg(target_os = "windows")]
@@ -827,125 +824,96 @@ fn main() {
         }
     };
 
-    // ---------------- UI Setup ----------------
-    let mut win = DoubleWindow::default().with_size(650, 550).center_screen().with_label(&format!("X-Server {}", env!("CARGO_PKG_VERSION")));
-    win.set_color(DARK_BG);
-    
+    // ---------------- Minimal UI: Version Widget (bottom-right corner) ----------------
+    let screen_w = app::screen_size().0 as i32;
+    let screen_h = app::screen_size().1 as i32;
+    let win_w = 160;
+    let win_h = 50;
+    let mut win = DoubleWindow::default()
+        .with_size(win_w, win_h)
+        .with_pos(screen_w - win_w - 10, screen_h - win_h - 60)
+        .with_label(&format!("X-Server {}", env!("CARGO_PKG_VERSION")));
+    win.set_color(Color::from_hex(0x1a1a2e));
+    win.set_border(false);
+
     // Load Icon
     let icon_data = include_bytes!("icon.jpg");
     if let Ok(img) = JpegImage::from_data(icon_data) {
         win.set_icon(Some(img));
     }
 
-    let mut pack = Pack::default().with_size(610, 500).with_pos(20, 15);
-    pack.set_spacing(15);
-
-    // MT5 Connections Area
-    let mut mt5_title = Frame::default().with_size(610, 25).with_label("📊 Connected MT5 Instances");
-    mt5_title.set_label_font(Font::HelveticaBold);
-    mt5_title.set_label_size(16);
-    mt5_title.set_label_color(TEXT_COLOR);
-    mt5_title.set_align(Align::Left | Align::Inside);
-
-    // We use TextDisplay to show lists (bigger since logs removed)
-    let mut mt5_buf = TextBuffer::default();
-    let mut mt5_list = TextDisplay::default().with_size(610, 250);
-    mt5_list.set_buffer(mt5_buf.clone());
-    mt5_list.set_color(DARK_BG);
-    mt5_list.set_text_color(TEXT_COLOR);
-    mt5_list.set_text_size(14);
-    mt5_list.set_text_font(Font::Courier); // tabular spacing
-
-    // EA Version & Update Area
-    let mut ea_title = Frame::default().with_size(610, 25).with_label("📦 EA Version");
-    ea_title.set_label_font(Font::HelveticaBold);
-    ea_title.set_label_size(16);
-    ea_title.set_label_color(TEXT_COLOR);
-    ea_title.set_align(Align::Left | Align::Inside);
-
-    let mut ea_version_label = Frame::default().with_size(610, 25).with_label("Checking EA versions...");
-    ea_version_label.set_label_size(13);
-    ea_version_label.set_label_color(Color::from_hex(0xaaaaaa));
-    ea_version_label.set_align(Align::Left | Align::Inside);
-
-    let mut ea_update_btn = fltk::button::Button::default().with_size(200, 35).with_label("🔄 Update EA");
-    ea_update_btn.set_color(Color::from_hex(0x333333));
-    ea_update_btn.set_label_color(Color::from_hex(0x888888));
-    ea_update_btn.set_label_size(14);
-    ea_update_btn.deactivate();
-
-    pack.end();
-    
-    // Bottom Status Bar
-    let mut status_bar = Frame::default().with_size(650, 25).with_pos(0, 525);
-    status_bar.set_color(Color::from_hex(0x1a1a1a));
-    status_bar.set_frame(FrameType::FlatBox);
-    status_bar.set_label_size(12);
-    status_bar.set_label_color(Color::from_hex(0x888888));
-    status_bar.set_align(Align::Center | Align::Inside);
-    
+    // Version label
+    let mut ver_label = Frame::default().with_size(win_w, win_h).with_pos(0, 0);
+    ver_label.set_frame(FrameType::FlatBox);
+    ver_label.set_color(Color::from_hex(0x1a1a2e));
+    ver_label.set_label_font(Font::HelveticaBold);
+    ver_label.set_label_size(14);
+    ver_label.set_label_color(ACCENT);
+    ver_label.set_align(Align::Center | Align::Inside);
     if port_status == "OK" {
-        status_bar.set_label(&format!("Server Running | Port: {} | Listening for MT5 Connections", port));
+        ver_label.set_label(&format!("X-Server v{}", env!("CARGO_PKG_VERSION")));
     } else {
-        status_bar.set_label(&format!("Error: {}", port_status));
-        status_bar.set_label_color(Color::Red);
+        ver_label.set_label(&format!("v{} ❌", env!("CARGO_PKG_VERSION")));
+        ver_label.set_label_color(Color::Red);
     }
-
-    // EA Update Button handler
-    let btn_state = app_state.clone();
-    let btn_sender = msg_sender.clone();
-    ea_update_btn.set_callback(move |btn| {
-        btn.set_label("⏳ กำลังอัพเดท...");
-        btn.deactivate();
-        let state_clone = btn_state.clone();
-        let sender_clone = btn_sender.clone();
-        // We need to spawn in tokio runtime - use a thread to bridge
-        std::thread::spawn(move || {
-            let rt = tokio::runtime::Runtime::new().unwrap();
-            rt.block_on(async { do_ea_update(state_clone, sender_clone).await; });
-        });
-    });
 
     win.end();
     win.show();
+    win.set_on_top();
 
-    // ---------------- Event Loop ----------------
-    
-    // The loop keeps running, and `app::awake()` from Tokio will trigger an interaction
+    // ---------------- Server Control Web UI on Port 3001 ----------------
+    let control_state = app_state.clone();
+    let control_sender = msg_sender.clone();
+    rt.spawn(async move {
+        let state = control_state.clone();
+        let sender = control_sender.clone();
+
+        let control_router = Router::new()
+            .route("/", get(|| async { serve_control_page().await }))
+            .route("/api/server-info", get(move || {
+                let s = state.clone();
+                async move { get_server_info(s).await }
+            }))
+            .route("/api/trigger-ea-update", post(move || {
+                let s = control_state.clone();
+                let snd = sender.clone();
+                async move { trigger_ea_update(s, snd).await }
+            }))
+            .layer(CorsLayer::new().allow_origin(Any).allow_methods(Any).allow_headers(Any));
+
+        let addr = "0.0.0.0:3001";
+        if let Ok(listener) = tokio::net::TcpListener::bind(addr).await {
+            eprintln!("Server Control UI listening on port 3001");
+            let _ = axum::serve(listener, control_router).await;
+        }
+    });
+
+    // ---------------- Event Loop (minimal) ----------------
     while app.wait() {
         if let Some(msg) = msg_receiver.recv() {
             match msg.as_str() {
-
                 msg if msg.starts_with("UPDATE_FOUND:") => {
                     let ver = msg.strip_prefix("UPDATE_FOUND:").unwrap();
-                    status_bar.set_label(&format!("🔄 กำลังดาวน์โหลด v{}...", ver));
-                    status_bar.set_label_color(ACCENT);
-                    win.set_label(&format!("X-Server {} → v{}", env!("CARGO_PKG_VERSION"), ver));
+                    ver_label.set_label(&format!("⬇️ v{}", ver));
+                    ver_label.set_label_color(Color::Yellow);
                 }
                 msg if msg.starts_with("UPDATE_PROGRESS:") => {
                     if let Ok(pct) = msg.strip_prefix("UPDATE_PROGRESS:").unwrap().parse::<f64>() {
-                        let pct_int = pct as u32;
-                        status_bar.set_label(&format!("⬇️ ดาวน์โหลด {}%", pct_int));
-                        if pct >= 100.0 {
-                            status_bar.set_label("📦 ดาวน์โหลดเสร็จ! กำลังติดตั้ง...");
-                        }
+                        ver_label.set_label(&format!("⬇️ {}%", pct as u32));
                     }
                 }
                 "UPDATE_STARTING" => {
-                    status_bar.set_label("🔄 กำลังตรวจสอบเวอร์ชั่น...");
-                    status_bar.set_label_color(Color::Yellow);
+                    ver_label.set_label("🔄 Checking...");
+                    ver_label.set_label_color(Color::Yellow);
                 }
                 "UPDATE_READY" => {
-                    status_bar.set_label("✅ อัพเดทเสร็จ! กำลังปิดเซิร์ฟเวอร์...");
-                    status_bar.set_label_color(Color::from_hex(0x34C759));
-                    win.set_label(&format!("X-Server {} (Restarting...)", env!("CARGO_PKG_VERSION")));
+                    ver_label.set_label("✅ Restarting...");
+                    ver_label.set_label_color(Color::from_hex(0x34C759));
                 }
                 msg if msg.starts_with("UPDATE_SHUTDOWN:") => {
                     let bat = msg.strip_prefix("UPDATE_SHUTDOWN:").unwrap().to_string();
-                    // Drop tokio runtime to release port 3000
                     drop(rt);
                     std::thread::sleep(std::time::Duration::from_millis(500));
-                    // Spawn the update batch file
                     #[cfg(target_os = "windows")]
                     {
                         use std::os::windows::process::CommandExt;
@@ -957,110 +925,182 @@ fn main() {
                     std::process::exit(0);
                 }
                 "UPDATE_FAILED" => {
-                    status_bar.set_label("❌ อัพเดทล้มเหลว");
-                    status_bar.set_label_color(Color::Red);
-                    win.set_label(&format!("X-Server {} (Update Failed)", env!("CARGO_PKG_VERSION")));
-                }
-                msg if msg.starts_with("EA_UPDATING:") => {
-                    let fname = msg.strip_prefix("EA_UPDATING:").unwrap();
-                    status_bar.set_label(&format!("⬇️ กำลังดาวน์โหลด {}...", fname));
-                    status_bar.set_label_color(Color::Yellow);
-                }
-                "EA_UPDATE_DONE" => {
-                    status_bar.set_label("✅ EA อัพเดทเสร็จ! กรุณา Restart MT5");
-                    status_bar.set_label_color(Color::from_hex(0x34C759));
-                    ea_update_btn.set_label("✅ อัพเดทเสร็จ");
-                    ea_update_btn.set_color(Color::from_hex(0x1a472a));
-                    ea_update_btn.set_label_color(Color::from_hex(0x34C759));
-                }
-                "EA_UPDATE_FAILED" => {
-                    status_bar.set_label("❌ EA อัพเดทล้มเหลว");
-                    status_bar.set_label_color(Color::Red);
-                    ea_update_btn.set_label("🔄 Update EA");
-                    ea_update_btn.activate();
+                    ver_label.set_label(&format!("v{} ❌", env!("CARGO_PKG_VERSION")));
+                    ver_label.set_label_color(Color::Red);
                 }
                 _ => {}
             }
         }
-        
-        // UI Updates requested by async threads
-
-        // 1. Update MT5 List (with EA version info)
-        if let Ok(data) = app_state.instance_data.lock() {
-            let ea_vers = app_state.ea_versions.lock().unwrap();
-            let latest_ver = app_state.latest_ea_version.lock().unwrap().clone();
-
-            let mut list_text = format!("{:<12} | {:<10} | {:<10} | {:<10} | {:<6} | {:<10}\n", "Account", "Symbol", "Equity", "Profit", "Orders", "EA Ver");
-            list_text.push_str("---------------------------------------------------------------------------------\n");
-            
-            for (key, val) in data.iter() {
-                let parts: Vec<&str> = key.split(':').collect();
-                let acc = parts.get(0).unwrap_or(&"");
-                let sym = parts.get(1).unwrap_or(&"");
-                
-                let equity = val.get("equity").and_then(|v| v.as_f64()).unwrap_or(0.0);
-                let profit = val.get("total_profit").and_then(|v| v.as_f64()).unwrap_or(0.0);
-                let orders = val.get("open_orders").and_then(|v| v.as_i64()).unwrap_or(0);
-                let ea_name = val.get("ea_name").and_then(|v| v.as_str()).unwrap_or("");
-                let ea_ver = ea_vers.get(ea_name).map(|s| s.as_str()).unwrap_or("-");
-
-                let ver_display = if !latest_ver.is_empty() && ea_ver != "-" && ea_ver != latest_ver {
-                    format!("{}⚠️", ea_ver)
-                } else {
-                    ea_ver.to_string()
-                };
-
-                let line = format!("{:<12} | {:<10} | ${:<9.2} | ${:<9.2} | {:<6} | {:<10}\n", acc, sym, equity, profit, orders, ver_display);
-                list_text.push_str(&line);
-            }
-            if data.is_empty() {
-                list_text.push_str("      (No MT5 EAs Connected)\n");
-            }
-            mt5_buf.set_text(&list_text);
-        }
-
-        // 2. Update EA Version Label & Button state
-        {
-            let latest = app_state.latest_ea_version.lock().unwrap().clone();
-            let ea_vers = app_state.ea_versions.lock().unwrap();
-            let pending = *app_state.ea_update_pending.lock().unwrap();
-
-            if latest.is_empty() {
-                ea_version_label.set_label("⏳ กำลังตรวจสอบเวอร์ชั่น EA...");
-                ea_version_label.set_label_color(Color::from_hex(0x888888));
-            } else if ea_vers.is_empty() {
-                ea_version_label.set_label(&format!("Latest: v{}  |  ⏳ รอ EA เชื่อมต่อ...", latest));
-                ea_version_label.set_label_color(Color::from_hex(0xaaaaaa));
-            } else {
-                let mut outdated: Vec<String> = Vec::new();
-                let mut all_current = true;
-                for (name, ver) in ea_vers.iter() {
-                    if ver != &latest {
-                        outdated.push(format!("{} (v{})", name, ver));
-                        all_current = false;
-                    }
-                }
-
-                if all_current {
-                    ea_version_label.set_label(&format!("✅ EA ทั้งหมดเป็นเวอร์ชั่นล่าสุด v{}", latest));
-                    ea_version_label.set_label_color(Color::from_hex(0x34C759));
-                    ea_update_btn.deactivate();
-                    ea_update_btn.set_label("✅ เวอร์ชั่นล่าสุด");
-                    ea_update_btn.set_color(Color::from_hex(0x1a472a));
-                    ea_update_btn.set_label_color(Color::from_hex(0x34C759));
-                } else {
-                    let label = format!("⚠️ EA เก่า: {}  →  v{}", outdated.join(", "), latest);
-                    ea_version_label.set_label(&label);
-                    ea_version_label.set_label_color(Color::from_hex(0xFF9500));
-                    if ea_update_btn.label() != "⏳ กำลังอัพเดท..." && ea_update_btn.label() != "✅ อัพเดทเสร็จ" {
-                        ea_update_btn.activate();
-                        ea_update_btn.set_label("🔄 Update EA");
-                        ea_update_btn.set_color(Color::from_hex(0x004488));
-                        ea_update_btn.set_label_color(Color::from_hex(0xFFFFFF));
-                    }
-                }
-            }
-        }
-        
     }
+}
+
+// ===== Server Control Page (Port 3001) =====
+async fn serve_control_page() -> impl IntoResponse {
+    let html = r##"<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>X-Server Control Panel</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #0a0a1a; --card: rgba(20,20,40,0.9); --accent: #6c63ff;
+  --success: #00e676; --danger: #ff5252; --warning: #ffab40;
+  --text: #e8e8f0; --dim: #8888aa; --border: rgba(108,99,255,0.2);
+}
+body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+.bg { position: fixed; top:0; left:0; width:100%; height:100%; z-index:0;
+  background: radial-gradient(ellipse at 20% 50%, rgba(108,99,255,0.08) 0%, transparent 50%),
+              radial-gradient(ellipse at 80% 20%, rgba(0,230,118,0.06) 0%, transparent 50%); }
+.container { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 30px 20px; }
+.header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 1px solid var(--border); }
+.header h1 { font-size: 24px; font-weight: 700; background: linear-gradient(135deg, #6c63ff, #00e676); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.header .ver { font-size: 13px; color: var(--dim); background: rgba(108,99,255,0.1); padding: 4px 12px; border-radius: 12px; border: 1px solid var(--border); }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; backdrop-filter: blur(10px); }
+.card h2 { font-size: 16px; font-weight: 600; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+.card h2 .icon { font-size: 18px; }
+.status-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.status-row:last-child { border-bottom: none; }
+.status-row .label { color: var(--dim); font-size: 13px; }
+.status-row .value { font-size: 13px; font-weight: 500; }
+.status-row .value.ok { color: var(--success); }
+.status-row .value.warn { color: var(--warning); }
+.status-row .value.err { color: var(--danger); }
+.mt5-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.mt5-table th { text-align: left; padding: 8px; color: var(--dim); font-weight: 500; border-bottom: 1px solid var(--border); }
+.mt5-table td { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.03); }
+.mt5-table tr:hover td { background: rgba(108,99,255,0.05); }
+.profit-pos { color: var(--success); } .profit-neg { color: var(--danger); }
+btn, .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif; }
+.btn-primary { background: linear-gradient(135deg, #6c63ff, #5a52e0); color: white; }
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(108,99,255,0.3); }
+.btn-success { background: rgba(0,230,118,0.15); color: var(--success); border: 1px solid rgba(0,230,118,0.3); }
+.btn-danger { background: rgba(255,82,82,0.15); color: var(--danger); border: 1px solid rgba(255,82,82,0.3); }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.empty { text-align: center; padding: 20px; color: var(--dim); font-size: 13px; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+.card { animation: fadeIn 0.4s ease-out; }
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="container">
+  <div class="header">
+    <h1>X-Server Control Panel</h1>
+    <span class="ver" id="ver">Loading...</span>
+  </div>
+
+  <div class="card">
+    <h2><span class="icon">⚡</span> Server Status</h2>
+    <div class="status-row"><span class="label">Dashboard (Port 3000)</span><span class="value ok" id="dash-status">●  Running</span></div>
+    <div class="status-row"><span class="label">Control Panel (Port 3001)</span><span class="value ok">●  Running</span></div>
+    <div class="status-row"><span class="label">Latest EA Version</span><span class="value" id="latest-ea">-</span></div>
+    <div class="status-row"><span class="label">Connected EAs</span><span class="value" id="ea-count">0</span></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="icon">📊</span> Connected MT5 Instances</h2>
+    <table class="mt5-table">
+      <thead><tr><th>Account</th><th>Symbol</th><th>EA</th><th>Version</th><th>Equity</th><th>Profit</th><th>Orders</th></tr></thead>
+      <tbody id="mt5-body"><tr><td colspan="7" class="empty">No MT5 EAs Connected</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2><span class="icon">🔧</span> Actions</h2>
+    <div class="actions">
+      <button class="btn btn-primary" onclick="updateEA()">🔄 Update EA</button>
+      <button class="btn btn-success" onclick="window.open('http://localhost:3000','_blank')">📊 Open Dashboard</button>
+    </div>
+    <div id="action-status" style="margin-top:12px;font-size:13px;color:var(--dim);"></div>
+  </div>
+</div>
+
+<script>
+async function loadInfo() {
+  try {
+    const res = await fetch('/api/server-info');
+    const d = await res.json();
+    document.getElementById('ver').textContent = 'v' + d.version;
+    document.getElementById('latest-ea').textContent = d.latest_ea_version || '-';
+    document.getElementById('latest-ea').className = 'value ok';
+    document.getElementById('ea-count').textContent = d.connections.length;
+    
+    const tbody = document.getElementById('mt5-body');
+    if (d.connections.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty">No MT5 EAs Connected</td></tr>';
+    } else {
+      tbody.innerHTML = d.connections.map(c => {
+        const profitClass = c.profit >= 0 ? 'profit-pos' : 'profit-neg';
+        const verClass = (d.latest_ea_version && c.ea_version !== d.latest_ea_version) ? 'warn' : 'ok';
+        return `<tr>
+          <td>${c.account}</td><td>${c.symbol}</td><td>${c.ea_name}</td>
+          <td class="${verClass}">${c.ea_version}</td>
+          <td>$${c.equity.toFixed(2)}</td>
+          <td class="${profitClass}">$${c.profit.toFixed(2)}</td>
+          <td>${c.orders}</td></tr>`;
+      }).join('');
+    }
+  } catch(e) { console.error(e); }
+}
+
+async function updateEA() {
+  document.getElementById('action-status').textContent = '⏳ Triggering EA update...';
+  try {
+    const res = await fetch('/api/trigger-ea-update', { method: 'POST' });
+    const d = await res.json();
+    document.getElementById('action-status').textContent = '✅ ' + d.message;
+  } catch(e) {
+    document.getElementById('action-status').textContent = '❌ Failed: ' + e.message;
+  }
+}
+
+loadInfo();
+setInterval(loadInfo, 3000);
+</script>
+</body>
+</html>"##;
+    (StatusCode::OK, [(header::CONTENT_TYPE, "text/html")], html)
+}
+
+async fn get_server_info(state: Arc<AppState>) -> impl IntoResponse {
+    let data = state.instance_data.lock().unwrap();
+    let ea_vers = state.ea_versions.lock().unwrap();
+    let latest = state.latest_ea_version.lock().unwrap().clone();
+
+    let mut connections = Vec::new();
+    for (key, val) in data.iter() {
+        let parts: Vec<&str> = key.split(':').collect();
+        let acc = parts.get(0).unwrap_or(&"").to_string();
+        let sym = parts.get(1).unwrap_or(&"").to_string();
+        let ea_name = val.get("ea_name").and_then(|v| v.as_str()).unwrap_or("").to_string();
+        let ea_ver = ea_vers.get(&ea_name).cloned().unwrap_or_else(|| "-".to_string());
+
+        connections.push(json!({
+            "account": acc,
+            "symbol": sym,
+            "ea_name": ea_name,
+            "ea_version": ea_ver,
+            "equity": val.get("equity").and_then(|v| v.as_f64()).unwrap_or(0.0),
+            "profit": val.get("total_profit").and_then(|v| v.as_f64()).unwrap_or(0.0),
+            "orders": val.get("open_orders").and_then(|v| v.as_i64()).unwrap_or(0),
+        }));
+    }
+
+    Json(json!({
+        "version": env!("CARGO_PKG_VERSION"),
+        "latest_ea_version": latest,
+        "connections": connections,
+    }))
+}
+
+async fn trigger_ea_update(state: Arc<AppState>, sender: fltk::app::Sender<String>) -> impl IntoResponse {
+    let state_clone = state.clone();
+    let sender_clone = sender.clone();
+    tokio::spawn(async move {
+        do_ea_update(state_clone, sender_clone).await;
+    });
+    Json(json!({ "status": "ok", "message": "EA update triggered" }))
 }

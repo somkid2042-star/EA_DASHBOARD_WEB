@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>X-Dashboard</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --bg-primary: #0a0a1a;
+      --bg-card: rgba(20, 20, 40, 0.85);
+      --accent: #6c63ff;
+      --accent-glow: rgba(108, 99, 255, 0.3);
+      --success: #00e676;
+      --danger: #ff5252;
+      --warning: #ffab40;
+      --text: #e8e8f0;
+      --text-dim: #8888aa;
+      --border: rgba(108, 99, 255, 0.2);
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ===== Animated Background ===== */
+    .bg-animation {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+      background: 
+        radial-gradient(ellipse at 20% 50%, rgba(108, 99, 255, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(0, 230, 118, 0.06) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 80%, rgba(255, 171, 64, 0.05) 0%, transparent 50%);
+    }
+
+    .bg-animation::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 49px,
+        rgba(108, 99, 255, 0.03) 49px, rgba(108, 99, 255, 0.03) 50px
+      ),
+      repeating-linear-gradient(
+        90deg, transparent, transparent 49px,
+        rgba(108, 99, 255, 0.03) 49px, rgba(108, 99, 255, 0.03) 50px
+      );
+    }
+
+    /* ===== Title Bar (Drag Region) ===== */
+    .titlebar {
+      height: 38px;
+      background: rgba(10, 10, 26, 0.95);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-app-region: drag;
+      position: relative;
+      z-index: 100;
+      flex-shrink: 0;
+    }
+
+    .titlebar-title {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-dim);
+      letter-spacing: 0.5px;
+    }
+
+    .titlebar .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+      display: inline-block;
+    }
+
+    .titlebar .status-dot.connected { background: var(--success); box-shadow: 0 0 6px var(--success); }
+    .titlebar .status-dot.disconnected { background: var(--danger); box-shadow: 0 0 6px var(--danger); }
+    .titlebar .status-dot.connecting { background: var(--warning); animation: pulse 1s infinite; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* ===== Connection Page ===== */
+    #connection-page {
+      position: relative;
+      z-index: 10;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+    }
+
+    .logo {
+      font-size: 48px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #6c63ff, #00e676);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: var(--text-dim);
+      font-size: 14px;
+      margin-bottom: 40px;
+    }
+
+    .connect-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      width: 420px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+
+    .connect-card h2 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: var(--text);
+    }
+
+    .input-group {
+      margin-bottom: 16px;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 12px 16px;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 14px;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .input-group input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .input-group input::placeholder {
+      color: var(--text-dim);
+    }
+
+    .quick-urls {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .quick-url {
+      padding: 6px 12px;
+      background: rgba(108, 99, 255, 0.1);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--accent);
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+      -webkit-app-region: no-drag;
+    }
+
+    .quick-url:hover {
+      background: rgba(108, 99, 255, 0.2);
+      border-color: var(--accent);
+    }
+
+    .btn-connect {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #6c63ff, #5a52e0);
+      border: none;
+      border-radius: 10px;
+      color: white;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-family: 'Inter', sans-serif;
+      letter-spacing: 0.3px;
+      -webkit-app-region: no-drag;
+    }
+
+    .btn-connect:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px var(--accent-glow);
+    }
+
+    .btn-connect:active {
+      transform: translateY(0);
+    }
+
+    .btn-connect.connecting {
+      background: linear-gradient(135deg, #ffab40, #ff8f00);
+      pointer-events: none;
+    }
+
+    .error-msg {
+      margin-top: 12px;
+      color: var(--danger);
+      font-size: 13px;
+      text-align: center;
+      display: none;
+    }
+
+    /* ===== Dashboard iFrame ===== */
+    #dashboard-frame {
+      display: none;
+      flex: 1;
+      width: 100%;
+      border: none;
+    }
+
+    /* ===== Bottom Bar ===== */
+    .bottom-bar {
+      height: 28px;
+      background: rgba(10, 10, 26, 0.95);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      font-size: 11px;
+      color: var(--text-dim);
+      z-index: 100;
+      flex-shrink: 0;
+    }
+
+    .bottom-bar .btn-small {
+      padding: 2px 10px;
+      background: rgba(108, 99, 255, 0.15);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      font-size: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .bottom-bar .btn-small:hover {
+      background: rgba(108, 99, 255, 0.3);
+    }
+
+    .bottom-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    /* animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .connect-card { animation: fadeIn 0.5s ease-out; }
+  </style>
+</head>
+<body>
+  <div class="bg-animation"></div>
+
+  <!-- Title Bar -->
+  <div class="titlebar">
+    <span class="status-dot disconnected" id="status-dot"></span>
+    <span class="titlebar-title" id="titlebar-text">X-Dashboard — Disconnected</span>
+  </div>
+
+  <!-- Connection Page -->
+  <div id="connection-page">
+    <div class="logo">X-Dashboard</div>
+    <div class="subtitle">EA Trading Monitor — Connect to X-Server</div>
+    
+    <div class="connect-card">
+      <h2>🔗 Connect to Server</h2>
+      
+      <div class="input-group">
+        <label>Server URL</label>
+        <input type="text" id="server-url" placeholder="http://localhost:3000" value="http://localhost:3000" />
+      </div>
+
+      <div class="quick-urls">
+        <div class="quick-url" onclick="setUrl('http://localhost:3000')">localhost:3000</div>
+        <div class="quick-url" onclick="setUrl('http://127.0.0.1:3000')">127.0.0.1:3000</div>
+      </div>
+
+      <button class="btn-connect" id="btn-connect" onclick="connectToServer()">
+        Connect to Server
+      </button>
+
+      <div class="error-msg" id="error-msg"></div>
+    </div>
+  </div>
+
+  <!-- Dashboard iframe -->
+  <iframe id="dashboard-frame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+
+  <!-- Bottom Bar -->
+  <div class="bottom-bar">
+    <span id="bottom-status">Not connected</span>
+    <div class="bottom-actions">
+      <button class="btn-small" onclick="refreshDashboard()">↻ Refresh</button>
+      <button class="btn-small" onclick="disconnect()">⏏ Disconnect</button>
+      <span>v1.4.0</span>
+    </div>
+  </div>
+
+  <script>
+    let currentUrl = '';
+    let isConnected = false;
+    let refreshInterval = null;
+
+    // Load saved URL
+    const savedUrl = localStorage.getItem('x-server-url');
+    if (savedUrl) {
+      document.getElementById('server-url').value = savedUrl;
+    }
+
+    function setUrl(url) {
+      document.getElementById('server-url').value = url;
+    }
+
+    async function connectToServer() {
+      const url = document.getElementById('server-url').value.trim();
+      if (!url) return;
+
+      const btn = document.getElementById('btn-connect');
+      const errorMsg = document.getElementById('error-msg');
+      const statusDot = document.getElementById('status-dot');
+
+      btn.textContent = '⏳ Connecting...';
+      btn.classList.add('connecting');
+      statusDot.className = 'status-dot connecting';
+      document.getElementById('titlebar-text').textContent = 'X-Dashboard — Connecting...';
+      errorMsg.style.display = 'none';
+
+      try {
+        // Test connection
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
+        const response = await fetch(url, { 
+          mode: 'no-cors',
+          signal: controller.signal 
+        });
+        clearTimeout(timeoutId);
+
+        // Connection seems OK, load in iframe
+        currentUrl = url;
+        localStorage.setItem('x-server-url', url);
+
+        document.getElementById('dashboard-frame').src = url;
+        document.getElementById('dashboard-frame').style.display = 'block';
+        document.getElementById('connection-page').style.display = 'none';
+
+        statusDot.className = 'status-dot connected';
+        document.getElementById('titlebar-text').textContent = 'X-Dashboard — Connected to ' + url;
+        document.getElementById('bottom-status').textContent = '🟢 Connected: ' + url;
+        isConnected = true;
+
+        // Auto-refresh every 30s
+        if (refreshInterval) clearInterval(refreshInterval);
+        refreshInterval = setInterval(() => {
+          if (isConnected) {
+            document.getElementById('dashboard-frame').src = currentUrl;
+          }
+        }, 30000);
+
+      } catch (err) {
+        btn.textContent = 'Connect to Server';
+        btn.classList.remove('connecting');
+        statusDot.className = 'status-dot disconnected';
+        document.getElementById('titlebar-text').textContent = 'X-Dashboard — Connection Failed';
+        
+        if (err.name === 'AbortError') {
+          errorMsg.textContent = '⏱ Connection timeout — Server ไม่ตอบสนอง';
+        } else {
+          // With no-cors, opaque response is normal for successful connection
+          // Let's just try loading anyway
+          currentUrl = url;
+          localStorage.setItem('x-server-url', url);
+
+          document.getElementById('dashboard-frame').src = url;
+          document.getElementById('dashboard-frame').style.display = 'block';
+          document.getElementById('connection-page').style.display = 'none';
+
+          statusDot.className = 'status-dot connected';
+          document.getElementById('titlebar-text').textContent = 'X-Dashboard — Connected to ' + url;
+          document.getElementById('bottom-status').textContent = '🟢 Connected: ' + url;
+          isConnected = true;
+        }
+        errorMsg.style.display = errorMsg.textContent ? 'block' : 'none';
+      }
+    }
+
+    function refreshDashboard() {
+      if (isConnected && currentUrl) {
+        document.getElementById('dashboard-frame').src = currentUrl;
+        document.getElementById('bottom-status').textContent = '🔄 Refreshed: ' + new Date().toLocaleTimeString();
+        setTimeout(() => {
+          document.getElementById('bottom-status').textContent = '🟢 Connected: ' + currentUrl;
+        }, 2000);
+      }
+    }
+
+    function disconnect() {
+      if (refreshInterval) clearInterval(refreshInterval);
+      isConnected = false;
+      currentUrl = '';
+      
+      document.getElementById('dashboard-frame').style.display = 'none';
+      document.getElementById('dashboard-frame').src = '';
+      document.getElementById('connection-page').style.display = 'flex';
+      document.getElementById('status-dot').className = 'status-dot disconnected';
+      document.getElementById('titlebar-text').textContent = 'X-Dashboard — Disconnected';
+      document.getElementById('bottom-status').textContent = 'Not connected';
+      
+      const btn = document.getElementById('btn-connect');
+      btn.textContent = 'Connect to Server';
+      btn.classList.remove('connecting');
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.metaKey && e.key === 'r') {
+        e.preventDefault();
+        refreshDashboard();
+      }
+      if (e.key === 'Enter' && !isConnected) {
+        connectToServer();
+      }
+    });
+
+    // Auto-connect on launch if URL is saved
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedUrl = localStorage.getItem('x-server-url');
+      if (savedUrl) {
+        setTimeout(() => connectToServer(), 500);
+      }
+    });
+  </script>
+</body>
+</html>
