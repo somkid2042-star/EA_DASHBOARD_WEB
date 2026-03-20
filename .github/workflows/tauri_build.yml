@@ -39,23 +39,46 @@ jobs:
           }
           Write-Host "Found MetaEditor at: $($metaeditor.FullName)"
           
-          # Compile all 3 EA files
-          $eaFiles = @("X_Grid.mq5", "X_BTC.mq5", "X_XAU.mq5")
-          $allSuccess = $true
+          # Find MQL5 directory (where Trade.mqh lives)
+          $mt5Dir = $metaeditor.Directory.Parent.FullName
+          $mql5Experts = Join-Path $mt5Dir "MQL5\Experts"
+          if (-not (Test-Path $mql5Experts)) {
+            # Try alternate: check APPDATA for terminal data folder
+            $terminalDataDir = Get-ChildItem -Path "$env:APPDATA\MetaQuotes\Terminal" -Directory -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($terminalDataDir) {
+              $mql5Experts = Join-Path $terminalDataDir.FullName "MQL5\Experts"
+            }
+          }
+          if (-not (Test-Path $mql5Experts)) {
+            New-Item -ItemType Directory -Path $mql5Experts -Force | Out-Null
+          }
+          Write-Host "MQL5 Experts dir: $mql5Experts"
           
+          # Copy MQ5 files to MT5's MQL5/Experts/ so compiler can find includes
+          $eaFiles = @("X_Grid.mq5", "X_BTC.mq5", "X_XAU.mq5")
           foreach ($ea in $eaFiles) {
-            $mq5Path = Resolve-Path $ea
+            Copy-Item $ea $mql5Experts -Force
+            Write-Host "Copied $ea to $mql5Experts"
+          }
+          
+          # Compile all 3 EA files from the MT5 directory
+          $allSuccess = $true
+          foreach ($ea in $eaFiles) {
+            $mq5Path = Join-Path $mql5Experts $ea
             Write-Host "Compiling: $mq5Path"
             & $metaeditor.FullName /compile:"$mq5Path" /log
             Start-Sleep -Seconds 10
             
-            $ex5Path = [System.IO.Path]::ChangeExtension($mq5Path, ".ex5")
+            $ex5Name = [System.IO.Path]::ChangeExtension($ea, ".ex5")
+            $ex5Path = Join-Path $mql5Experts $ex5Name
             if (Test-Path $ex5Path) {
               $fileSize = (Get-Item $ex5Path).Length
               Write-Host "✅ $ea compiled successfully ($fileSize bytes)"
+              # Copy .ex5 back to workspace root
+              Copy-Item $ex5Path . -Force
             } else {
               Write-Host "⚠️ Checking log for $ea..."
-              $logPath = [System.IO.Path]::ChangeExtension($mq5Path, ".log")
+              $logPath = Join-Path $mql5Experts ([System.IO.Path]::ChangeExtension($ea, ".log"))
               if (Test-Path $logPath) { Get-Content $logPath }
               Write-Error "❌ Compilation failed for $ea!"
               $allSuccess = $false
