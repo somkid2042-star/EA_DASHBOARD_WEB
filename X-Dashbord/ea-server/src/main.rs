@@ -31,6 +31,11 @@ pub struct AppState {
     preloaded_settings: Arc<Mutex<HashMap<String, Value>>>,
     logs: Arc<Mutex<Vec<String>>>,
     push_subscriptions: Arc<Mutex<Vec<Value>>>,
+    // EA version tracking
+    ea_versions: Arc<Mutex<HashMap<String, String>>>,       // ea_name -> current version from MT5
+    latest_ea_version: Arc<Mutex<String>>,                  // latest version from GitHub
+    ea_update_urls: Arc<Mutex<HashMap<String, String>>>,    // ea_name.ex5 -> download_url
+    ea_update_pending: Arc<Mutex<bool>>,                    // flag for UI button
 }
 
 // VAPID Keys for Web Push
@@ -206,6 +211,18 @@ async fn post_stats(
     let account_id = payload.get("account_id").and_then(|v| v.as_str()).unwrap_or("default").to_string();
     let symbol = payload.get("symbol").and_then(|v| v.as_str()).unwrap_or("").to_string();
     let inst_key = format!("{}:{}", account_id, symbol);
+
+    // Track EA version
+    if let (Some(ea_ver), Some(ea_name)) = (payload.get("ea_version").and_then(|v| v.as_str()), payload.get("ea_name").and_then(|v| v.as_str())) {
+        let mut versions = state.ea_versions.lock().unwrap();
+        versions.insert(ea_name.to_string(), ea_ver.to_string());
+        // Check if outdated
+        let latest = state.latest_ea_version.lock().unwrap().clone();
+        if !latest.is_empty() && ea_ver != latest {
+            let mut pending = state.ea_update_pending.lock().unwrap();
+            *pending = true;
+        }
+    }
 
     let mut data_map = state.instance_data.lock().unwrap();
     let mut current_data = data_map.get(&inst_key).cloned().unwrap_or_else(|| {
@@ -535,6 +552,138 @@ async fn check_for_updates(app_state: Arc<AppState>, _ui_sender: fltk::app::Send
     app::awake();
 }
 
+// ===== EA Update Check =====
+async fn check_ea_updates(app_state: Arc<AppState>) {
+    let url = "https://api.github.com/repos/somkid2042-star/EA_DASHBOARD_WEB/releases/latest";
+    let client = reqwest::Client::new();
+
+    let res = match client.get(url).header("User-Agent", "X-Server-EA-Updater").send().await {
+        Ok(r) => r,
+        Err(_) => {
+            app_state.log("ℹ️ Could not check EA updates.".to_string());
+            app::awake();
+            return;
+        }
+    };
+
+    let release = match res.json::<serde_json::Value>().await {
+        Ok(r) => r,
+        Err(_) => return,
+    };
+
+    let tag = match release.get("tag_name").and_then(|t| t.as_str()) {
+        Some(t) => t,
+        None => return,
+    };
+
+    let latest_version = tag.strip_prefix("v").unwrap_or(tag).to_string();
+
+    // Store latest version
+    {
+        let mut lv = app_state.latest_ea_version.lock().unwrap();
+        *lv = latest_version.clone();
+    }
+
+    // Find .ex5 assets and store URLs
+    if let Some(assets) = release.get("assets").and_then(|a| a.as_array()) {
+        let mut urls = app_state.ea_update_urls.lock().unwrap();
+        for asset in assets {
+            if let Some(name) = asset.get("name").and_then(|n| n.as_str()) {
+                if name.ends_with(".ex5") {
+                    if let Some(dl_url) = asset.get("browser_download_url").and_then(|u| u.as_str()) {
+                        urls.insert(name.to_string(), dl_url.to_string());
+                    }
+                }
+            }
+        }
+        if !urls.is_empty() {
+            app_state.log(format!("📦 EA Release v{}: found {} .ex5 files", latest_version, urls.len()));
+        }
+    }
+    app::awake();
+}
+
+#[cfg(target_os = "windows")]
+async fn do_ea_update(app_state: Arc<AppState>, ui_sender: fltk::app::Sender<String>) {
+    let urls = app_state.ea_update_urls.lock().unwrap().clone();
+    if urls.is_empty() {
+        app_state.log("❌ No EA files to update.".to_string());
+        app::awake();
+        return;
+    }
+
+    // Find MT5 data folder
+    let appdata = std::env::var("APPDATA").unwrap_or_default();
+    let mt5_base = std::path::Path::new(&appdata).join("MetaQuotes").join("Terminal");
+    let mut experts_dirs: Vec<std::path::PathBuf> = Vec::new();
+
+    if mt5_base.exists() {
+        if let Ok(entries) = std::fs::read_dir(&mt5_base) {
+            for entry in entries.flatten() {
+                let experts_path = entry.path().join("MQL5").join("Experts");
+                if experts_path.exists() {
+                    experts_dirs.push(experts_path);
+                }
+            }
+        }
+    }
+
+    if experts_dirs.is_empty() {
+        app_state.log("❌ MT5 Experts folder not found! Please copy .ex5 manually.".to_string());
+        // Still download to current directory
+        let exe_dir = std::env::current_exe().ok().and_then(|p| p.parent().map(|d| d.to_path_buf())).unwrap_or_default();
+        experts_dirs.push(exe_dir);
+    }
+
+    let client = reqwest::Client::new();
+    let mut updated = 0;
+
+    for (filename, url) in &urls {
+        ui_sender.send(format!("EA_UPDATING:{}", filename));
+        app::awake();
+
+        match client.get(url).header("User-Agent", "X-Server-EA-Updater").send().await {
+            Ok(resp) => {
+                if let Ok(bytes) = resp.bytes().await {
+                    for dir in &experts_dirs {
+                        let target = dir.join(filename);
+                        // Delete old file first
+                        if target.exists() {
+                            let _ = std::fs::remove_file(&target);
+                        }
+                        if std::fs::write(&target, &bytes).is_ok() {
+                            app_state.log(format!("✅ Updated {} -> {}", filename, dir.display()));
+                            updated += 1;
+                        }
+                    }
+                }
+            }
+            Err(e) => {
+                app_state.log(format!("❌ Failed to download {}: {:?}", filename, e));
+            }
+        }
+    }
+
+    if updated > 0 {
+        let mut pending = app_state.ea_update_pending.lock().unwrap();
+        *pending = false;
+        // Clear tracked versions so they get re-detected
+        app_state.ea_versions.lock().unwrap().clear();
+        app_state.log(format!("✅ EA Update Complete! {} files updated. Please restart MT5 to apply.", updated));
+        ui_sender.send("EA_UPDATE_DONE".to_string());
+    } else {
+        app_state.log("❌ EA Update failed.".to_string());
+        ui_sender.send("EA_UPDATE_FAILED".to_string());
+    }
+    app::awake();
+}
+
+#[cfg(not(target_os = "windows"))]
+async fn do_ea_update(app_state: Arc<AppState>, _ui_sender: fltk::app::Sender<String>) {
+    app_state.log("ℹ️ EA update only supported on Windows.".to_string());
+    app::awake();
+}
+
 fn main() {
     // Setup panic hook to log crashes to text file for debugging
     std::panic::set_hook(Box::new(|info| {
@@ -552,6 +701,10 @@ fn main() {
         preloaded_settings: Arc::new(Mutex::new(HashMap::new())),
         logs: Arc::new(Mutex::new(vec![])),
         push_subscriptions: Arc::new(Mutex::new(vec![])),
+        ea_versions: Arc::new(Mutex::new(HashMap::new())),
+        latest_ea_version: Arc::new(Mutex::new(String::new())),
+        ea_update_urls: Arc::new(Mutex::new(HashMap::new())),
+        ea_update_pending: Arc::new(Mutex::new(false)),
     });
 
     let port = 3000u16;
@@ -637,8 +790,10 @@ fn main() {
                 let logs_state = server_state.logs.clone();
                 let app_update = app_state_tokio.clone();
                 let sender_update = msg_sender_tokio.clone();
+                let app_ea_check = server_state.clone();
                 tokio::spawn(async move { check_for_updates(app_update, sender_update).await; });
                 tokio::spawn(async move { preload_settings(preload_state, logs_state).await; });
+                tokio::spawn(async move { check_ea_updates(app_ea_check).await; });
 
                 let cors = CorsLayer::new().allow_origin(Any).allow_methods(Any).allow_headers(Any);
                 let router = Router::new()
@@ -692,29 +847,32 @@ fn main() {
     mt5_title.set_label_color(TEXT_COLOR);
     mt5_title.set_align(Align::Left | Align::Inside);
 
-    // We use TextDisplay to show lists
+    // We use TextDisplay to show lists (bigger since logs removed)
     let mut mt5_buf = TextBuffer::default();
-    let mut mt5_list = TextDisplay::default().with_size(610, 150);
+    let mut mt5_list = TextDisplay::default().with_size(610, 250);
     mt5_list.set_buffer(mt5_buf.clone());
     mt5_list.set_color(DARK_BG);
     mt5_list.set_text_color(TEXT_COLOR);
     mt5_list.set_text_size(14);
     mt5_list.set_text_font(Font::Courier); // tabular spacing
 
-    // Logs Area
-    let mut log_title = Frame::default().with_size(610, 25).with_label("📝 Activity Logs");
-    log_title.set_label_font(Font::HelveticaBold);
-    log_title.set_label_size(16);
-    log_title.set_label_color(TEXT_COLOR);
-    log_title.set_align(Align::Left | Align::Inside);
+    // EA Version & Update Area
+    let mut ea_title = Frame::default().with_size(610, 25).with_label("📦 EA Version");
+    ea_title.set_label_font(Font::HelveticaBold);
+    ea_title.set_label_size(16);
+    ea_title.set_label_color(TEXT_COLOR);
+    ea_title.set_align(Align::Left | Align::Inside);
 
-    let mut log_buf = TextBuffer::default();
-    let mut log_view = TextDisplay::default().with_size(610, 150);
-    log_view.set_buffer(log_buf.clone());
-    log_view.set_color(Color::from_hex(0x111111));
-    log_view.set_text_color(Color::from_hex(0xaaaaaa));
-    log_view.set_text_size(12);
-    log_view.set_text_font(Font::Courier);
+    let mut ea_version_label = Frame::default().with_size(610, 25).with_label("Checking EA versions...");
+    ea_version_label.set_label_size(13);
+    ea_version_label.set_label_color(Color::from_hex(0xaaaaaa));
+    ea_version_label.set_align(Align::Left | Align::Inside);
+
+    let mut ea_update_btn = fltk::button::Button::default().with_size(200, 35).with_label("🔄 Update EA");
+    ea_update_btn.set_color(Color::from_hex(0x333333));
+    ea_update_btn.set_label_color(Color::from_hex(0x888888));
+    ea_update_btn.set_label_size(14);
+    ea_update_btn.deactivate();
 
     pack.end();
     
@@ -733,11 +891,25 @@ fn main() {
         status_bar.set_label_color(Color::Red);
     }
 
+    // EA Update Button handler
+    let btn_state = app_state.clone();
+    let btn_sender = msg_sender.clone();
+    ea_update_btn.set_callback(move |btn| {
+        btn.set_label("⏳ กำลังอัพเดท...");
+        btn.deactivate();
+        let state_clone = btn_state.clone();
+        let sender_clone = btn_sender.clone();
+        // We need to spawn in tokio runtime - use a thread to bridge
+        std::thread::spawn(move || {
+            let rt = tokio::runtime::Runtime::new().unwrap();
+            rt.block_on(async { do_ea_update(state_clone, sender_clone).await; });
+        });
+    });
+
     win.end();
     win.show();
 
     // ---------------- Event Loop ----------------
-    let mut log_line_count = 0;
     
     // The loop keeps running, and `app::awake()` from Tokio will trigger an interaction
     while app.wait() {
@@ -789,25 +961,37 @@ fn main() {
                     status_bar.set_label_color(Color::Red);
                     win.set_label(&format!("X-Server {} (Update Failed)", env!("CARGO_PKG_VERSION")));
                 }
+                msg if msg.starts_with("EA_UPDATING:") => {
+                    let fname = msg.strip_prefix("EA_UPDATING:").unwrap();
+                    status_bar.set_label(&format!("⬇️ กำลังดาวน์โหลด {}...", fname));
+                    status_bar.set_label_color(Color::Yellow);
+                }
+                "EA_UPDATE_DONE" => {
+                    status_bar.set_label("✅ EA อัพเดทเสร็จ! กรุณา Restart MT5");
+                    status_bar.set_label_color(Color::from_hex(0x34C759));
+                    ea_update_btn.set_label("✅ อัพเดทเสร็จ");
+                    ea_update_btn.set_color(Color::from_hex(0x1a472a));
+                    ea_update_btn.set_label_color(Color::from_hex(0x34C759));
+                }
+                "EA_UPDATE_FAILED" => {
+                    status_bar.set_label("❌ EA อัพเดทล้มเหลว");
+                    status_bar.set_label_color(Color::Red);
+                    ea_update_btn.set_label("🔄 Update EA");
+                    ea_update_btn.activate();
+                }
                 _ => {}
             }
         }
         
         // UI Updates requested by async threads
-        
-        // 1. Update Logs
-        if let Ok(logs) = app_state.logs.lock() {
-            if logs.len() != log_line_count {
-                log_buf.set_text(&logs.join("\n"));
-                log_view.scroll(log_view.count_lines(0, log_buf.length(), true), 0);
-                log_line_count = logs.len();
-            }
-        }
 
-        // 2. Update MT5 List
+        // 1. Update MT5 List (with EA version info)
         if let Ok(data) = app_state.instance_data.lock() {
-            let mut list_text = format!("{:<15} | {:<10} | {:<12} | {:<10} | {:<6}\n", "Account", "Symbol", "Equity", "Profit", "Orders");
-            list_text.push_str("----------------------------------------------------------------------\n");
+            let ea_vers = app_state.ea_versions.lock().unwrap();
+            let latest_ver = app_state.latest_ea_version.lock().unwrap().clone();
+
+            let mut list_text = format!("{:<12} | {:<10} | {:<10} | {:<10} | {:<6} | {:<10}\n", "Account", "Symbol", "Equity", "Profit", "Orders", "EA Ver");
+            list_text.push_str("---------------------------------------------------------------------------------\n");
             
             for (key, val) in data.iter() {
                 let parts: Vec<&str> = key.split(':').collect();
@@ -817,14 +1001,65 @@ fn main() {
                 let equity = val.get("equity").and_then(|v| v.as_f64()).unwrap_or(0.0);
                 let profit = val.get("total_profit").and_then(|v| v.as_f64()).unwrap_or(0.0);
                 let orders = val.get("open_orders").and_then(|v| v.as_i64()).unwrap_or(0);
+                let ea_name = val.get("ea_name").and_then(|v| v.as_str()).unwrap_or("");
+                let ea_ver = ea_vers.get(ea_name).map(|s| s.as_str()).unwrap_or("-");
 
-                let line = format!("{:<15} | {:<10} | ${:<11.2} | ${:<9.2} | {:<6}\n", acc, sym, equity, profit, orders);
+                let ver_display = if !latest_ver.is_empty() && ea_ver != "-" && ea_ver != latest_ver {
+                    format!("{}⚠️", ea_ver)
+                } else {
+                    ea_ver.to_string()
+                };
+
+                let line = format!("{:<12} | {:<10} | ${:<9.2} | ${:<9.2} | {:<6} | {:<10}\n", acc, sym, equity, profit, orders, ver_display);
                 list_text.push_str(&line);
             }
             if data.is_empty() {
                 list_text.push_str("      (No MT5 EAs Connected)\n");
             }
             mt5_buf.set_text(&list_text);
+        }
+
+        // 2. Update EA Version Label & Button state
+        {
+            let latest = app_state.latest_ea_version.lock().unwrap().clone();
+            let ea_vers = app_state.ea_versions.lock().unwrap();
+            let pending = *app_state.ea_update_pending.lock().unwrap();
+
+            if latest.is_empty() {
+                ea_version_label.set_label("⏳ กำลังตรวจสอบเวอร์ชั่น EA...");
+                ea_version_label.set_label_color(Color::from_hex(0x888888));
+            } else if ea_vers.is_empty() {
+                ea_version_label.set_label(&format!("Latest: v{}  |  ⏳ รอ EA เชื่อมต่อ...", latest));
+                ea_version_label.set_label_color(Color::from_hex(0xaaaaaa));
+            } else {
+                let mut outdated: Vec<String> = Vec::new();
+                let mut all_current = true;
+                for (name, ver) in ea_vers.iter() {
+                    if ver != &latest {
+                        outdated.push(format!("{} (v{})", name, ver));
+                        all_current = false;
+                    }
+                }
+
+                if all_current {
+                    ea_version_label.set_label(&format!("✅ EA ทั้งหมดเป็นเวอร์ชั่นล่าสุด v{}", latest));
+                    ea_version_label.set_label_color(Color::from_hex(0x34C759));
+                    ea_update_btn.deactivate();
+                    ea_update_btn.set_label("✅ เวอร์ชั่นล่าสุด");
+                    ea_update_btn.set_color(Color::from_hex(0x1a472a));
+                    ea_update_btn.set_label_color(Color::from_hex(0x34C759));
+                } else {
+                    let label = format!("⚠️ EA เก่า: {}  →  v{}", outdated.join(", "), latest);
+                    ea_version_label.set_label(&label);
+                    ea_version_label.set_label_color(Color::from_hex(0xFF9500));
+                    if ea_update_btn.label() != "⏳ กำลังอัพเดท..." && ea_update_btn.label() != "✅ อัพเดทเสร็จ" {
+                        ea_update_btn.activate();
+                        ea_update_btn.set_label("🔄 Update EA");
+                        ea_update_btn.set_color(Color::from_hex(0x004488));
+                        ea_update_btn.set_label_color(Color::from_hex(0xFFFFFF));
+                    }
+                }
+            }
         }
         
     }
