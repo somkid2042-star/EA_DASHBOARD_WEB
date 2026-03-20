@@ -7,6 +7,7 @@
   <title>X-Dashboard</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
 
     * {
       margin: 0;
@@ -19,19 +20,18 @@
       --card: #ffffff;
       --card-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
       --card-hover-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
-      --accent: #00c853;
-      --accent-light: rgba(0, 200, 83, 0.08);
-      --accent-orange: #ff9100;
-      --accent-orange-light: rgba(255, 145, 0, 0.08);
+      --green: #00c853;
+      --green-bg: rgba(0, 200, 83, 0.08);
+      --orange: #ff9100;
+      --orange-bg: rgba(255, 145, 0, 0.08);
       --text: #1a1a2e;
-      --text-secondary: #6e6e80;
-      --text-light: #9e9eb0;
+      --text2: #6e6e80;
+      --text3: #9e9eb0;
       --border: rgba(0, 0, 0, 0.06);
-      --bar-bg: #ffffff;
     }
 
     body {
-      font-family: 'Inter', -apple-system, sans-serif;
+      font-family: 'Inter', 'Prompt', -apple-system, sans-serif;
       background: var(--bg);
       color: var(--text);
       height: 100vh;
@@ -44,35 +44,32 @@
     /* ===== Top Bar ===== */
     .topbar {
       height: 44px;
-      background: var(--bar-bg);
+      background: #fff;
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: center;
+      gap: 8px;
       -webkit-app-region: drag;
-      position: relative;
       z-index: 100;
       flex-shrink: 0;
     }
 
     .topbar-title {
-      font-size: 14px;
-      font-weight: 600;
+      font-size: 15px;
+      font-weight: 700;
       color: var(--text);
-      letter-spacing: -0.2px;
+      letter-spacing: -0.3px;
     }
 
     .topbar-ver {
       font-size: 11px;
       font-weight: 400;
-      color: var(--text-light);
-      margin-left: 6px;
+      color: var(--text3);
     }
 
     /* ===== Main Content ===== */
     #main-page {
-      position: relative;
-      z-index: 10;
       flex: 1;
       display: flex;
       flex-direction: column;
@@ -88,21 +85,25 @@
       margin-bottom: 32px;
     }
 
-    .header-icon {
-      width: 64px;
-      height: 64px;
-      background: linear-gradient(135deg, #00c853, #69f0ae);
-      border-radius: 16px;
+    .header-logo {
+      width: 56px;
+      height: 56px;
+      background: linear-gradient(135deg, var(--green), #69f0ae);
+      border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 32px;
       margin: 0 auto 14px;
       box-shadow: 0 4px 16px rgba(0, 200, 83, 0.2);
     }
 
+    .header-logo svg {
+      width: 28px;
+      height: 28px;
+    }
+
     .header h1 {
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 800;
       color: var(--text);
       letter-spacing: -0.5px;
@@ -111,7 +112,8 @@
 
     .header p {
       font-size: 13px;
-      color: var(--text-secondary);
+      color: var(--text2);
+      font-weight: 400;
     }
 
     /* ===== Cards ===== */
@@ -119,7 +121,7 @@
       display: flex;
       gap: 14px;
       width: 100%;
-      max-width: 580px;
+      max-width: 560px;
     }
 
     .card {
@@ -142,39 +144,51 @@
       transform: translateY(-1px);
     }
 
-    .card-icon-box {
-      width: 44px;
-      height: 44px;
+    .card-icon {
+      width: 42px;
+      height: 42px;
       border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 22px;
       margin-bottom: 14px;
     }
 
-    .card.server .card-icon-box {
-      background: var(--accent-orange-light);
+    .card-icon svg {
+      width: 22px;
+      height: 22px;
     }
 
-    .card.dashboard .card-icon-box {
-      background: var(--accent-light);
+    .card.server .card-icon {
+      background: var(--orange-bg);
+    }
+
+    .card.dashboard .card-icon {
+      background: var(--green-bg);
+    }
+
+    .card.server .card-icon svg {
+      color: var(--orange);
+    }
+
+    .card.dashboard .card-icon svg {
+      color: var(--green);
     }
 
     .card-label {
       font-size: 11px;
-      font-weight: 500;
+      font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.8px;
       margin-bottom: 4px;
     }
 
     .card.server .card-label {
-      color: var(--accent-orange);
+      color: var(--orange);
     }
 
     .card.dashboard .card-label {
-      color: var(--accent);
+      color: var(--green);
     }
 
     .card-title {
@@ -187,12 +201,12 @@
 
     .card-desc {
       font-size: 12px;
-      color: var(--text-secondary);
+      color: var(--text2);
       line-height: 1.6;
       margin-bottom: 14px;
     }
 
-    .card-url-tag {
+    .card-url {
       display: inline-flex;
       align-items: center;
       gap: 4px;
@@ -200,18 +214,24 @@
       background: var(--bg);
       border-radius: 6px;
       font-size: 10px;
-      color: var(--text-light);
-      font-family: 'SF Mono', 'Menlo', 'Fira Code', monospace;
+      color: var(--text3);
+      font-family: 'SF Mono', 'Menlo', monospace;
     }
 
-    .card-url-tag .lock {
-      color: var(--accent);
+    .card-url .lock-icon {
+      color: var(--green);
     }
 
-    /* ===== Status Row ===== */
+    .card-url .lock-icon svg {
+      width: 10px;
+      height: 10px;
+      vertical-align: middle;
+    }
+
+    /* ===== Status ===== */
     .status-row {
       display: flex;
-      gap: 20px;
+      gap: 12px;
       margin-top: 20px;
     }
 
@@ -220,19 +240,20 @@
       align-items: center;
       gap: 6px;
       font-size: 11px;
-      color: var(--text-secondary);
-      background: var(--card);
+      color: var(--text2);
+      font-weight: 500;
+      background: #fff;
       padding: 5px 12px;
       border-radius: 20px;
       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
     }
 
-    .status-dot {
+    .dot {
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: var(--accent);
-      box-shadow: 0 0 4px var(--accent);
+      background: var(--green);
+      box-shadow: 0 0 4px var(--green);
     }
 
     /* ===== Content Frame ===== */
@@ -247,7 +268,7 @@
     /* ===== Bottom Bar ===== */
     .bottombar {
       height: 36px;
-      background: var(--bar-bg);
+      background: #fff;
       border-top: 1px solid var(--border);
       display: flex;
       align-items: center;
@@ -260,7 +281,7 @@
 
     .bottombar-status {
       font-size: 12px;
-      color: var(--text-secondary);
+      color: var(--text2);
       font-weight: 500;
     }
 
@@ -275,7 +296,7 @@
       background: var(--bg);
       border: 1px solid var(--border);
       border-radius: 6px;
-      color: var(--text-secondary);
+      color: var(--text2);
       font-size: 11px;
       font-weight: 500;
       cursor: pointer;
@@ -290,7 +311,7 @@
 
     .ver-tag {
       font-size: 10px;
-      color: var(--text-light);
+      color: var(--text3);
     }
 
     /* ===== Animations ===== */
@@ -335,35 +356,68 @@
   <!-- Main Page -->
   <div id="main-page">
     <div class="header">
-      <div class="header-icon">📡</div>
+      <div class="header-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round">
+          <path d="M12 2 L12 22" />
+          <path d="M2 12 L22 12" />
+          <path d="M4.93 4.93 L19.07 19.07" />
+          <path d="M19.07 4.93 L4.93 19.07" />
+        </svg>
+      </div>
       <h1>X-Dashboard</h1>
       <p>EA Trading Monitor</p>
     </div>
 
     <div class="cards">
       <div class="card server" onclick="openPage('server')">
-        <div class="card-icon-box">🖥️</div>
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2" />
+            <path d="M8 21h8" />
+            <path d="M12 17v4" />
+          </svg>
+        </div>
         <div class="card-label">Server</div>
         <div class="card-title">Server Control</div>
         <div class="card-desc">จัดการ X-Server<br>MT5 Connections, EA Update</div>
-        <div class="card-url-tag"><span class="lock">🔒</span> x-server.xea.dpdns.org</div>
+        <div class="card-url">
+          <span class="lock-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <rect x="3" y="11" width="18" height="11" rx="2" />
+              <path d="M7 11V7a5 5 0 0110 0v4" />
+            </svg></span>
+          x-server.xea.dpdns.org
+        </div>
       </div>
 
       <div class="card dashboard" onclick="openPage('dashboard')">
-        <div class="card-icon-box">📊</div>
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M18 20V10" />
+            <path d="M12 20V4" />
+            <path d="M6 20v-6" />
+          </svg>
+        </div>
         <div class="card-label">Dashboard</div>
         <div class="card-title">EA Dashboard</div>
         <div class="card-desc">ข้อมูล EA, กราฟ P&L<br>Close Order, Settings</div>
-        <div class="card-url-tag"><span class="lock">🔒</span> xea.dpdns.org</div>
+        <div class="card-url">
+          <span class="lock-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <rect x="3" y="11" width="18" height="11" rx="2" />
+              <path d="M7 11V7a5 5 0 0110 0v4" />
+            </svg></span>
+          xea.dpdns.org
+        </div>
       </div>
     </div>
 
     <div class="status-row">
       <div class="status-pill">
-        <div class="status-dot"></div> Server Online
+        <div class="dot"></div> Server Online
       </div>
       <div class="status-pill">
-        <div class="status-dot"></div> Dashboard Online
+        <div class="dot"></div> Dashboard Online
       </div>
     </div>
   </div>
@@ -388,11 +442,7 @@
       server: 'https://x-server.xea.dpdns.org',
       dashboard: 'https://xea.dpdns.org'
     };
-
-    const LABELS = {
-      server: 'Server Control',
-      dashboard: 'EA Dashboard'
-    };
+    const LABELS = { server: 'Server Control', dashboard: 'EA Dashboard' };
 
     function openPage(type) {
       currentPage = type;
@@ -404,10 +454,7 @@
     }
 
     function refreshPage() {
-      if (currentPage) {
-        const frame = document.getElementById('content-frame');
-        frame.src = frame.src;
-      }
+      if (currentPage) { const f = document.getElementById('content-frame'); f.src = f.src; }
     }
 
     function goHome() {
