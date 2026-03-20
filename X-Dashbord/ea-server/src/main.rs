@@ -228,6 +228,11 @@ async fn post_stats(
         if let Some(settings) = preload.get(&inst_key) {
             current_data["ea_settings"] = settings.clone();
             current_data["_web_saved_settings"] = settings.clone();
+            // Queue update_settings command so the EA actually applies saved settings
+            state.instance_commands.lock().unwrap()
+                .entry(inst_key.clone()).or_default()
+                .push(json!({ "action": "update_settings", "settings": settings.clone() }));
+            state.log(format!("📥 Restored saved settings for {} from Supabase", inst_key));
         }
     }
     current_data["_connected"] = json!(true);
