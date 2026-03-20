@@ -16,18 +16,14 @@
     }
 
     :root {
-      --bg: #f0f2f5;
-      --card: #ffffff;
-      --card-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-      --card-hover-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
-      --green: #00c853;
-      --green-bg: rgba(0, 200, 83, 0.08);
+      --bg: #1a1a2e;
+      --card: #252540;
+      --card-border: rgba(255, 255, 255, 0.06);
+      --green: #00e676;
       --orange: #ff9100;
-      --orange-bg: rgba(255, 145, 0, 0.08);
-      --text: #1a1a2e;
-      --text2: #6e6e80;
-      --text3: #9e9eb0;
-      --border: rgba(0, 0, 0, 0.06);
+      --text: #ffffff;
+      --text2: #8e8ea0;
+      --text3: #5a5a6e;
     }
 
     body {
@@ -41,31 +37,11 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* ===== Top Bar ===== */
-    .topbar {
-      height: 44px;
-      background: #fff;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
+    /* ===== Drag Region (invisible) ===== */
+    .drag-region {
+      height: 28px;
       -webkit-app-region: drag;
-      z-index: 100;
       flex-shrink: 0;
-    }
-
-    .topbar-title {
-      font-size: 15px;
-      font-weight: 700;
-      color: var(--text);
-      letter-spacing: -0.3px;
-    }
-
-    .topbar-ver {
-      font-size: 11px;
-      font-weight: 400;
-      color: var(--text3);
     }
 
     /* ===== Main Content ===== */
@@ -75,31 +51,14 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 30px 40px;
+      padding: 0 40px 20px;
       -webkit-app-region: no-drag;
     }
 
     /* ===== Header ===== */
     .header {
       text-align: center;
-      margin-bottom: 32px;
-    }
-
-    .header-logo {
-      width: 56px;
-      height: 56px;
-      background: linear-gradient(135deg, var(--green), #69f0ae);
-      border-radius: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 14px;
-      box-shadow: 0 4px 16px rgba(0, 200, 83, 0.2);
-    }
-
-    .header-logo svg {
-      width: 28px;
-      height: 28px;
+      margin-bottom: 30px;
     }
 
     .header h1 {
@@ -111,7 +70,7 @@
     }
 
     .header p {
-      font-size: 13px;
+      font-size: 12px;
       color: var(--text2);
       font-weight: 400;
     }
@@ -121,111 +80,102 @@
       display: flex;
       gap: 14px;
       width: 100%;
-      max-width: 560px;
+      max-width: 520px;
     }
 
     .card {
       flex: 1;
       background: var(--card);
-      border-radius: 16px;
-      padding: 22px;
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 20px;
       cursor: pointer;
       transition: all 0.25s ease;
-      box-shadow: var(--card-shadow);
-      border: 1px solid var(--border);
+      position: relative;
+      min-height: 140px;
     }
 
     .card:hover {
       transform: translateY(-3px);
-      box-shadow: var(--card-hover-shadow);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+      border-color: rgba(255, 255, 255, 0.1);
     }
 
     .card:active {
       transform: translateY(-1px);
     }
 
-    .card-icon {
-      width: 42px;
-      height: 42px;
-      border-radius: 12px;
+    /* Card top: dot + label */
+    .card-header {
       display: flex;
       align-items: center;
-      justify-content: center;
-      margin-bottom: 14px;
+      gap: 6px;
+      margin-bottom: 8px;
     }
 
-    .card-icon svg {
-      width: 22px;
-      height: 22px;
+    .card-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
     }
 
-    .card.server .card-icon {
-      background: var(--orange-bg);
+    .card.server .card-dot {
+      background: var(--orange);
+      box-shadow: 0 0 6px var(--orange);
     }
 
-    .card.dashboard .card-icon {
-      background: var(--green-bg);
-    }
-
-    .card.server .card-icon svg {
-      color: var(--orange);
-    }
-
-    .card.dashboard .card-icon svg {
-      color: var(--green);
+    .card.dashboard .card-dot {
+      background: var(--green);
+      box-shadow: 0 0 6px var(--green);
     }
 
     .card-label {
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      margin-bottom: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text2);
     }
 
-    .card.server .card-label {
-      color: var(--orange);
-    }
-
-    .card.dashboard .card-label {
-      color: var(--green);
-    }
-
+    /* Card main text */
     .card-title {
-      font-size: 17px;
-      font-weight: 700;
-      color: var(--text);
-      letter-spacing: -0.3px;
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
       margin-bottom: 6px;
     }
 
-    .card-desc {
-      font-size: 12px;
+    .card.server .card-title {
       color: var(--text2);
-      line-height: 1.6;
-      margin-bottom: 14px;
     }
 
-    .card-url {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 4px 8px;
-      background: var(--bg);
-      border-radius: 6px;
-      font-size: 10px;
-      color: var(--text3);
-      font-family: 'SF Mono', 'Menlo', monospace;
-    }
-
-    .card-url .lock-icon {
+    .card.dashboard .card-title {
       color: var(--green);
     }
 
-    .card-url .lock-icon svg {
-      width: 10px;
-      height: 10px;
-      vertical-align: middle;
+    .card-desc {
+      font-size: 11px;
+      color: var(--text3);
+      font-weight: 400;
+    }
+
+    /* Card bottom-right icon */
+    .card-icon-br {
+      position: absolute;
+      bottom: 14px;
+      right: 14px;
+      width: 36px;
+      height: 36px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card-icon-br svg {
+      width: 18px;
+      height: 18px;
+      color: var(--text3);
     }
 
     /* ===== Status ===== */
@@ -238,19 +188,15 @@
     .status-pill {
       display: flex;
       align-items: center;
-      gap: 6px;
-      font-size: 11px;
-      color: var(--text2);
+      gap: 5px;
+      font-size: 10px;
+      color: var(--text3);
       font-weight: 500;
-      background: #fff;
-      padding: 5px 12px;
-      border-radius: 20px;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
     }
 
-    .dot {
-      width: 6px;
-      height: 6px;
+    .s-dot {
+      width: 5px;
+      height: 5px;
       border-radius: 50%;
       background: var(--green);
       box-shadow: 0 0 4px var(--green);
@@ -265,53 +211,75 @@
       background: var(--bg);
     }
 
-    /* ===== Bottom Bar ===== */
-    .bottombar {
-      height: 36px;
-      background: #fff;
-      border-top: 1px solid var(--border);
+    /* ===== Bottom Nav Bar ===== */
+    .navbar {
+      height: 52px;
+      background: rgba(20, 20, 36, 0.95);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      padding: 0 16px;
+      justify-content: center;
+      gap: 8px;
+      padding: 0 20px;
       z-index: 100;
       flex-shrink: 0;
       -webkit-app-region: no-drag;
     }
 
-    .bottombar-status {
-      font-size: 12px;
-      color: var(--text2);
-      font-weight: 500;
-    }
-
-    .bottombar-actions {
+    .nav-btn {
       display: flex;
-      gap: 6px;
+      flex-direction: column;
       align-items: center;
+      gap: 3px;
+      padding: 6px 18px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.15s;
     }
 
-    .btn-bar {
-      padding: 4px 12px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--text2);
-      font-size: 11px;
+    .nav-btn:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .nav-btn:active {
+      transform: scale(0.95);
+    }
+
+    .nav-btn svg {
+      width: 20px;
+      height: 20px;
+      color: var(--text3);
+    }
+
+    .nav-btn span {
+      font-size: 9px;
       font-weight: 500;
-      cursor: pointer;
-      transition: all 0.15s;
+      color: var(--text3);
       font-family: 'Inter', sans-serif;
     }
 
-    .btn-bar:hover {
-      background: #e8e8ee;
-      color: var(--text);
+    .nav-btn.active svg {
+      color: var(--green);
     }
 
-    .ver-tag {
-      font-size: 10px;
+    .nav-btn.active span {
+      color: var(--green);
+    }
+
+    .nav-sep {
+      width: 1px;
+      height: 24px;
+      background: rgba(255, 255, 255, 0.06);
+      margin: 0 4px;
+    }
+
+    .nav-ver {
+      font-size: 9px;
       color: var(--text3);
+      padding: 0 8px;
     }
 
     /* ===== Animations ===== */
@@ -328,111 +296,118 @@
     }
 
     .header {
-      animation: fadeUp 0.35s ease-out;
+      animation: fadeUp 0.3s ease-out;
     }
 
     .card:nth-child(1) {
-      animation: fadeUp 0.35s ease-out 0.08s both;
+      animation: fadeUp 0.3s ease-out 0.06s both;
     }
 
     .card:nth-child(2) {
-      animation: fadeUp 0.35s ease-out 0.15s both;
-    }
-
-    .status-row {
-      animation: fadeUp 0.35s ease-out 0.22s both;
+      animation: fadeUp 0.3s ease-out 0.12s both;
     }
   </style>
 </head>
 
 <body>
 
-  <!-- Top Bar -->
-  <div class="topbar">
-    <span class="topbar-title" id="topbar-text">Dashboard</span>
-    <span class="topbar-ver">v1.5.0</span>
-  </div>
+  <!-- Drag Region -->
+  <div class="drag-region"></div>
 
   <!-- Main Page -->
   <div id="main-page">
     <div class="header">
-      <div class="header-logo">
-        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round">
-          <path d="M12 2 L12 22" />
-          <path d="M2 12 L22 12" />
-          <path d="M4.93 4.93 L19.07 19.07" />
-          <path d="M19.07 4.93 L4.93 19.07" />
-        </svg>
-      </div>
       <h1>X-Dashboard</h1>
       <p>EA Trading Monitor</p>
     </div>
 
     <div class="cards">
+      <!-- Server Card -->
       <div class="card server" onclick="openPage('server')">
-        <div class="card-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        <div class="card-header">
+          <div class="card-dot"></div>
+          <span class="card-label">Server Control</span>
+        </div>
+        <div class="card-title">X-Server</div>
+        <div class="card-desc">MT5, EA Update</div>
+        <div class="card-icon-br">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
             stroke-linejoin="round">
             <rect x="2" y="3" width="20" height="14" rx="2" />
             <path d="M8 21h8" />
             <path d="M12 17v4" />
           </svg>
         </div>
-        <div class="card-label">Server</div>
-        <div class="card-title">Server Control</div>
-        <div class="card-desc">จัดการ X-Server<br>MT5 Connections, EA Update</div>
-        <div class="card-url">
-          <span class="lock-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <rect x="3" y="11" width="18" height="11" rx="2" />
-              <path d="M7 11V7a5 5 0 0110 0v4" />
-            </svg></span>
-          x-server.xea.dpdns.org
-        </div>
       </div>
 
+      <!-- Dashboard Card -->
       <div class="card dashboard" onclick="openPage('dashboard')">
-        <div class="card-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        <div class="card-header">
+          <div class="card-dot"></div>
+          <span class="card-label">EA Dashboard</span>
+        </div>
+        <div class="card-title">Dashboard</div>
+        <div class="card-desc">P&L, Orders, Settings</div>
+        <div class="card-icon-br">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
             stroke-linejoin="round">
             <path d="M18 20V10" />
             <path d="M12 20V4" />
             <path d="M6 20v-6" />
           </svg>
         </div>
-        <div class="card-label">Dashboard</div>
-        <div class="card-title">EA Dashboard</div>
-        <div class="card-desc">ข้อมูล EA, กราฟ P&L<br>Close Order, Settings</div>
-        <div class="card-url">
-          <span class="lock-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <rect x="3" y="11" width="18" height="11" rx="2" />
-              <path d="M7 11V7a5 5 0 0110 0v4" />
-            </svg></span>
-          xea.dpdns.org
-        </div>
       </div>
     </div>
 
     <div class="status-row">
       <div class="status-pill">
-        <div class="dot"></div> Server Online
+        <div class="s-dot"></div> Online
       </div>
-      <div class="status-pill">
-        <div class="dot"></div> Dashboard Online
-      </div>
+      <div class="status-pill">v1.5.0</div>
     </div>
   </div>
 
   <!-- Content iframe -->
   <iframe id="content-frame"></iframe>
 
-  <!-- Bottom Bar -->
-  <div class="bottombar">
-    <span class="bottombar-status" id="bottom-status">เลือกเมนู</span>
-    <div class="bottombar-actions">
-      <button class="btn-bar" onclick="refreshPage()">⟳ Refresh</button>
-      <button class="btn-bar" onclick="goHome()">◀ Home</button>
-      <span class="ver-tag">v1.5.0</span>
-    </div>
+  <!-- Bottom Nav Bar -->
+  <div class="navbar">
+    <button class="nav-btn active" id="nav-home" onclick="goHome()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+        <polyline points="9 22 9 12 15 12 15 22" />
+      </svg>
+      <span>Home</span>
+    </button>
+    <button class="nav-btn" id="nav-server" onclick="openPage('server')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round">
+        <rect x="2" y="3" width="20" height="14" rx="2" />
+        <path d="M8 21h8" />
+        <path d="M12 17v4" />
+      </svg>
+      <span>Server</span>
+    </button>
+    <button class="nav-btn" id="nav-dashboard" onclick="openPage('dashboard')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round">
+        <path d="M18 20V10" />
+        <path d="M12 20V4" />
+        <path d="M6 20v-6" />
+      </svg>
+      <span>Dashboard</span>
+    </button>
+    <div class="nav-sep"></div>
+    <button class="nav-btn" onclick="refreshPage()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round">
+        <polyline points="23 4 23 10 17 10" />
+        <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" />
+      </svg>
+      <span>Reload</span>
+    </button>
+    <span class="nav-ver">v1.5.0</span>
   </div>
 
   <script>
@@ -442,19 +417,25 @@
       server: 'https://x-server.xea.dpdns.org',
       dashboard: 'https://xea.dpdns.org'
     };
-    const LABELS = { server: 'Server Control', dashboard: 'EA Dashboard' };
+
+    function setActiveNav(id) {
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      if (id) document.getElementById(id).classList.add('active');
+    }
 
     function openPage(type) {
       currentPage = type;
       document.getElementById('content-frame').src = URLS[type];
       document.getElementById('content-frame').style.display = 'block';
       document.getElementById('main-page').style.display = 'none';
-      document.getElementById('topbar-text').textContent = LABELS[type];
-      document.getElementById('bottom-status').textContent = LABELS[type];
+      setActiveNav('nav-' + type);
     }
 
     function refreshPage() {
-      if (currentPage) { const f = document.getElementById('content-frame'); f.src = f.src; }
+      if (currentPage) {
+        const f = document.getElementById('content-frame');
+        f.src = f.src;
+      }
     }
 
     function goHome() {
@@ -462,8 +443,7 @@
       document.getElementById('content-frame').style.display = 'none';
       document.getElementById('content-frame').src = '';
       document.getElementById('main-page').style.display = 'flex';
-      document.getElementById('topbar-text').textContent = 'Dashboard';
-      document.getElementById('bottom-status').textContent = 'เลือกเมนู';
+      setActiveNav('nav-home');
     }
 
     document.addEventListener('keydown', (e) => {
