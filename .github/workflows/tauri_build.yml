@@ -67,8 +67,10 @@ jobs:
           foreach ($ea in $eaFiles) {
             $mq5Path = Resolve-Path $ea
             Write-Host "Compiling $ea..."
-            & $metaeditor /compile:"$mq5Path" /log /inc:"$includeDir"
-            Start-Sleep -Seconds 10
+            $argList = @("/compile:""$mq5Path""", "/log", "/inc:""$includeDir""")
+            Write-Host "Arguments: $argList"
+            Start-Process -FilePath $metaeditor -ArgumentList $argList -Wait -NoNewWindow
+            Start-Sleep -Seconds 5
             
             $ex5Path = [System.IO.Path]::ChangeExtension($mq5Path, ".ex5")
             if (Test-Path $ex5Path) {
