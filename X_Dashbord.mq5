@@ -280,10 +280,10 @@ void OnTick()
    //--- 1) Update Indicators
    UpdateIndicators();
    
-   //--- 1.5) Spread Filter — skip if spread is too wide
+   //--- 1.5) Spread Filter — track spread for grid expansion guard
    double spread = SymbolInfoDouble(_Symbol, SYMBOL_ASK) - SymbolInfoDouble(_Symbol, SYMBOL_BID);
    double maxSpread = g_currentGridStepPt * 0.3;
-   if(maxSpread > 0 && spread > maxSpread) return;
+   bool spreadTooWide = (maxSpread > 0 && spread > maxSpread);
    
    //--- 2) สแกนออเดอร์
    ScanOrders();
@@ -442,7 +442,7 @@ void OnTick()
       {
          OpenFirstOrder();
       }
-      else if(!g_isHedged) // Only expand grid if not hedged
+      else if(!g_isHedged && !spreadTooWide) // Only expand grid if not hedged & spread OK
       {
          CheckGridExpansion();
       }
@@ -564,9 +564,10 @@ void OpenFirstOrder()
    
    if(g_SetUseTrendFilter)
    {
-      //--- RSI-gated entry: ต้องรอ RSI pullback ก่อนเปิด
-      if(g_trendDir == 1 && g_currentRSI < g_SetRSIBuyLevel) doBuy = true;
-      else if(g_trendDir == -1 && g_currentRSI > g_SetRSISellLevel) doSell = true;
+      //--- เปิดตามทิศทาง Trend เป็นหลัก, RSI เป็นโบนัสช่วยจับจังหวะ
+      if(g_trendDir == 1) doBuy = true;      // Trend ขึ้น → BUY
+      else if(g_trendDir == -1) doSell = true; // Trend ลง → SELL
+      // ถ้า Trend sideways (0) → ไม่เปิด
    }
    else
    {
@@ -1152,7 +1153,18 @@ void ProcessCommands(string jsonResp)
             else if(actionStr == "close_all")
             {
                Print("⚡ ได้รับคำสั่งจาก Dashboard: ปิดออเดอร์ทั้งหมด!");
-               CloseAllOrders();
+               // ปิดออเดอร์โดยไม่ตั้ง cooldown — ผู้ใช้ปิดเอง ต้องเปิดใหม่ได้ทันที
+               for(int i = PositionsTotal() - 1; i >= 0; i--)
+               {
+                  ulong ticket = PositionGetTicket(i);
+                  if(ticket <= 0) continue;
+                  if(PositionGetInteger(POSITION_MAGIC) != g_MagicNumber) continue;
+                  if(PositionGetString(POSITION_SYMBOL) != _Symbol) continue;
+                  g_trade.PositionClose(ticket);
+               }
+               g_highestProfitUSD = 0;
+               g_isHedged = false;
+               g_hedgeDirection = 0;
                nextActionIdx = StringFind(jsonResp, "\"action\":", actionIndex + 10);
             }
             else if(actionStr == "close_profitable")
