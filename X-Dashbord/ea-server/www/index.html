@@ -316,6 +316,121 @@
             color: var(--text-main);
         }
 
+
+        /* ===== Redesigned P/L Section ===== */
+        .pl-summary-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .pl-card {
+            position: relative;
+            border-radius: 16px;
+            padding: 16px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            transition: transform 0.2s ease;
+        }
+        .pl-card:active { transform: scale(0.97); }
+        .pl-card .pl-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 400;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .pl-card .pl-label .pl-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .pl-card .pl-value {
+            font-size: 26px;
+            font-weight: 700;
+            margin-top: 6px;
+            letter-spacing: -0.5px;
+            line-height: 1;
+        }
+        .pl-card .pl-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        .pl-card .pl-bg-icon {
+            position: absolute;
+            right: -8px;
+            bottom: -8px;
+            font-size: 64px;
+            opacity: 0.06;
+            pointer-events: none;
+        }
+        .pl-card.profit .pl-dot { background: var(--success); }
+        .pl-card.profit .pl-value { color: var(--success); }
+        .pl-card.loss .pl-dot { background: var(--danger); }
+        .pl-card.loss .pl-value { color: var(--danger); }
+        .pl-card.neutral .pl-dot { background: var(--text-muted); }
+        .pl-card.neutral .pl-value { color: var(--text-muted); }
+
+        .chart-container {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 16px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 12px;
+        }
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .chart-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .chart-total-badge {
+            font-size: 13px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 20px;
+            letter-spacing: -0.3px;
+        }
+        .chart-total-badge.positive {
+            background: rgba(52, 199, 89, 0.12);
+            color: var(--success);
+        }
+        .chart-total-badge.negative {
+            background: rgba(255, 59, 48, 0.12);
+            color: var(--danger);
+        }
+        .chart-total-badge.zero {
+            background: var(--input-bg);
+            color: var(--text-muted);
+        }
+        .chart-legend {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 10px;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+        .chart-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .chart-legend-dot {
+            width: 8px; height: 8px; border-radius: 2px;
+        }
+
         /* Stats Grid */
         .stats-grid {
             display: grid;
@@ -918,25 +1033,37 @@
                     </div>
                 </div>
 
-                <!-- Today & Monthly P/L Cards -->
-                <div class="stats-grid" style="margin-bottom: 0;">
-                    <div id="card-today-pl" class="balance-card"
-                        style="padding:16px; text-align:left; margin-bottom:12px; border-radius:16px; position:relative; overflow:hidden;">
-                        <div style="font-size:12px; opacity:0.8;">กำไร/ขาดทุนวันนี้</div>
-                        <div id="today_pl_value" style="font-size:24px; font-weight:700; margin-top:4px;">$0.00</div>
+                <!-- P/L Summary Cards -->
+                <div class="pl-summary-row">
+                    <div id="card-today-pl" class="pl-card neutral">
+                        <div class="pl-label"><span class="pl-dot"></span>วันนี้</div>
+                        <div class="pl-value" id="today_pl_value">$0.00</div>
+                        <div class="pl-sub" id="today_pl_trades">0 trades</div>
+                        <span class="pl-bg-icon material-symbols-rounded">today</span>
                     </div>
-                    <div id="card-month-pl" class="balance-card"
-                        style="padding:16px; text-align:left; margin-bottom:12px; border-radius:16px; position:relative; overflow:hidden;">
-                        <div style="font-size:12px; opacity:0.8;">กำไร/ขาดทุนเดือนนี้</div>
-                        <div id="month_pl_value" style="font-size:24px; font-weight:700; margin-top:4px;">$0.00</div>
+                    <div id="card-month-pl" class="pl-card neutral">
+                        <div class="pl-label"><span class="pl-dot"></span>เดือนนี้</div>
+                        <div class="pl-value" id="month_pl_value">$0.00</div>
+                        <div class="pl-sub" id="month_pl_trades">0 trades</div>
+                        <span class="pl-bg-icon material-symbols-rounded">calendar_month</span>
                     </div>
                 </div>
 
-                <!-- Monthly Chart Card -->
-                <div class="card" style="padding:16px; margin-bottom:12px;">
-                    <div style="font-size:14px; font-weight:600; color:var(--text-main); margin-bottom:12px;">📈
-                        กำไร/ขาดทุนรายวัน (เดือนนี้)</div>
-                    <canvas id="monthly-chart" width="400" height="180" style="width:100%; height:180px;"></canvas>
+                <!-- Premium P/L Chart -->
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <div class="chart-title">
+                            <span class="material-symbols-rounded" style="font-size:18px;">bar_chart</span>
+                            กำไรรายวัน
+                        </div>
+                        <div id="chart-month-total" class="chart-total-badge zero">$0.00</div>
+                    </div>
+                    <canvas id="monthly-chart" width="400" height="200" style="width:100%; height:200px;"></canvas>
+                    <div class="chart-legend">
+                        <div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--success);"></div>กำไร</div>
+                        <div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--danger);"></div>ขาดทุน</div>
+                        <div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--primary-blue); border-radius:50%;"></div>สะสม</div>
+                    </div>
                 </div>
             </div> <!-- End view-home -->
 
@@ -2212,50 +2339,39 @@
             const todayStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
             const monthStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
 
-            let todayPL = 0, monthPL = 0;
+            let todayPL = 0, monthPL = 0, todayTrades = 0, monthTrades = 0;
             cachedHistoryData.forEach(t => {
                 if (!t.date) return;
                 const dateOnly = t.date.split(' ')[0];
-                if (dateOnly === todayStr) todayPL += t.profit;
-                if (dateOnly.startsWith(monthStr)) monthPL += t.profit;
+                if (dateOnly === todayStr) { todayPL += t.profit; todayTrades++; }
+                if (dateOnly.startsWith(monthStr)) { monthPL += t.profit; monthTrades++; }
             });
 
             // Update Today card
             const todayEl = document.getElementById('today_pl_value');
             const todayCard = document.getElementById('card-today-pl');
-            if (todayEl) {
-                todayEl.innerText = (todayPL >= 0 ? '+$' : '-$') + Math.abs(todayPL).toFixed(2);
-                todayEl.style.color = todayPL > 0 ? 'var(--success)' : todayPL < 0 ? 'var(--danger)' : 'var(--text-main)';
-            }
+            const todayTradesEl = document.getElementById('today_pl_trades');
+            if (todayEl) todayEl.innerText = (todayPL >= 0 ? '+$' : '-$') + Math.abs(todayPL).toFixed(2);
+            if (todayTradesEl) todayTradesEl.innerText = todayTrades + ' trades';
             if (todayCard) {
-                todayCard.style.background = 'var(--card-bg)';
-                todayCard.style.boxShadow = 'none';
-                if (todayPL > 0) {
-                    todayCard.style.borderLeft = '4px solid var(--success)';
-                } else if (todayPL < 0) {
-                    todayCard.style.borderLeft = '4px solid var(--danger)';
-                } else {
-                    todayCard.style.borderLeft = '4px solid var(--text-muted)';
-                }
+                todayCard.className = 'pl-card ' + (todayPL > 0 ? 'profit' : todayPL < 0 ? 'loss' : 'neutral');
             }
 
             // Update Month card
             const monthEl = document.getElementById('month_pl_value');
             const monthCard = document.getElementById('card-month-pl');
-            if (monthEl) {
-                monthEl.innerText = (monthPL >= 0 ? '+$' : '-$') + Math.abs(monthPL).toFixed(2);
-                monthEl.style.color = monthPL > 0 ? 'var(--success)' : monthPL < 0 ? 'var(--danger)' : 'var(--text-main)';
-            }
+            const monthTradesEl = document.getElementById('month_pl_trades');
+            if (monthEl) monthEl.innerText = (monthPL >= 0 ? '+$' : '-$') + Math.abs(monthPL).toFixed(2);
+            if (monthTradesEl) monthTradesEl.innerText = monthTrades + ' trades';
             if (monthCard) {
-                monthCard.style.background = 'var(--card-bg)';
-                monthCard.style.boxShadow = 'none';
-                if (monthPL > 0) {
-                    monthCard.style.borderLeft = '4px solid var(--success)';
-                } else if (monthPL < 0) {
-                    monthCard.style.borderLeft = '4px solid var(--danger)';
-                } else {
-                    monthCard.style.borderLeft = '4px solid var(--text-muted)';
-                }
+                monthCard.className = 'pl-card ' + (monthPL > 0 ? 'profit' : monthPL < 0 ? 'loss' : 'neutral');
+            }
+
+            // Chart total badge
+            const badge = document.getElementById('chart-month-total');
+            if (badge) {
+                badge.innerText = (monthPL >= 0 ? '+$' : '-$') + Math.abs(monthPL).toFixed(2);
+                badge.className = 'chart-total-badge ' + (monthPL > 0 ? 'positive' : monthPL < 0 ? 'negative' : 'zero');
             }
 
             drawMonthlyChart();
@@ -2266,7 +2382,6 @@
             if (!canvas) return;
             const ctx = canvas.getContext('2d');
 
-            // HiDPI support
             const dpr = window.devicePixelRatio || 1;
             const rect = canvas.getBoundingClientRect();
             canvas.width = rect.width * dpr;
@@ -2274,16 +2389,22 @@
             ctx.scale(dpr, dpr);
             const W = rect.width;
             const H = rect.height;
-
             ctx.clearRect(0, 0, W, H);
+
+            const isDark = document.body.classList.contains('dark');
+            const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+            const labelColor = isDark ? '#777' : '#999';
+            const successColor = isDark ? '#30D158' : '#34C759';
+            const dangerColor = isDark ? '#FF453A' : '#FF3B30';
+            const curveColor = isDark ? '#64D2FF' : '#4A90E2';
 
             const now = new Date();
             const year = now.getFullYear();
             const month = now.getMonth();
+            const todayDay = now.getDate();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             const monthStr = year + '-' + String(month + 1).padStart(2, '0');
 
-            // Aggregate daily
             const dailyPL = {};
             cachedHistoryData.forEach(t => {
                 if (!t.date) return;
@@ -2294,82 +2415,150 @@
                 }
             });
 
-            // Build data points for all days
+            // Only show up to today
+            const showDays = Math.min(todayDay, daysInMonth);
             const data = [];
-            for (let d = 1; d <= daysInMonth; d++) {
-                data.push(dailyPL[d] || 0);
+            for (let d = 1; d <= showDays; d++) data.push(dailyPL[d] || 0);
+            if (data.length === 0) {
+                ctx.fillStyle = labelColor;
+                ctx.font = '13px Kanit';
+                ctx.textAlign = 'center';
+                ctx.fillText('ยังไม่มีข้อมูล', W / 2, H / 2);
+                return;
             }
 
-            if (data.length === 0) return;
+            // Cumulative
+            const cumul = [];
+            let sum = 0;
+            data.forEach(v => { sum += v; cumul.push(sum); });
 
-            const maxVal = Math.max(...data.map(Math.abs), 1);
-            const padL = 10, padR = 10, padT = 20, padB = 25;
+            const maxBar = Math.max(...data.map(Math.abs), 0.01);
+            const maxCum = Math.max(...cumul.map(Math.abs), 0.01);
+
+            const padL = 35, padR = 10, padT = 10, padB = 28;
             const chartW = W - padL - padR;
             const chartH = H - padT - padB;
             const midY = padT + chartH / 2;
+            const barW = Math.max(2, (chartW / showDays) - 2);
+            const gap = chartW / showDays;
 
-            // Draw zero line
-            ctx.beginPath();
-            ctx.strokeStyle = '#E0E0E0';
+            // Horizontal grid lines
+            ctx.strokeStyle = gridColor;
+            ctx.lineWidth = 0.5;
+            for (let i = 0; i <= 4; i++) {
+                const y = padT + (chartH / 4) * i;
+                ctx.beginPath();
+                ctx.moveTo(padL, y);
+                ctx.lineTo(W - padR, y);
+                ctx.stroke();
+            }
+
+            // Zero line (bolder)
+            ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)';
             ctx.lineWidth = 1;
-            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
             ctx.moveTo(padL, midY);
             ctx.lineTo(W - padR, midY);
             ctx.stroke();
-            ctx.setLineDash([]);
 
-            // Draw zero label
-            ctx.fillStyle = '#999';
-            ctx.font = '10px Kanit';
+            // Y-axis labels
+            ctx.fillStyle = labelColor;
+            ctx.font = '9px Kanit';
             ctx.textAlign = 'right';
-            ctx.fillText('$0', padL + chartW + 5, midY + 3);
+            ctx.fillText('+$' + maxBar.toFixed(0), padL - 4, padT + 10);
+            ctx.fillText('$0', padL - 4, midY + 3);
+            ctx.fillText('-$' + maxBar.toFixed(0), padL - 4, padT + chartH - 2);
 
-            // Draw line
-            const stepX = chartW / (data.length - 1 || 1);
-            ctx.beginPath();
+            // Draw bars
             for (let i = 0; i < data.length; i++) {
-                const x = padL + i * stepX;
-                const y = midY - (data[i] / maxVal) * (chartH / 2);
-                if (i === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
-            }
-            ctx.strokeStyle = '#00A3E0';
-            ctx.lineWidth = 2.5;
-            ctx.lineJoin = 'round';
-            ctx.stroke();
+                const x = padL + i * gap + (gap - barW) / 2;
+                const val = data[i];
+                const barH = (Math.abs(val) / maxBar) * (chartH / 2 - 4);
+                const isToday = (i + 1 === todayDay);
 
-            // Fill gradient under the line
-            const lastX = padL + (data.length - 1) * stepX;
-            ctx.lineTo(lastX, midY);
-            ctx.lineTo(padL, midY);
-            ctx.closePath();
-            const grd = ctx.createLinearGradient(0, padT, 0, H - padB);
-            grd.addColorStop(0, 'rgba(0, 163, 224, 0.2)');
-            grd.addColorStop(1, 'rgba(0, 163, 224, 0)');
-            ctx.fillStyle = grd;
-            ctx.fill();
-
-            // Draw dots and day labels
-            ctx.textAlign = 'center';
-            for (let i = 0; i < data.length; i++) {
-                const x = padL + i * stepX;
-                const y = midY - (data[i] / maxVal) * (chartH / 2);
-
-                // Only show dots for days with data
-                if (dailyPL[i + 1] !== undefined) {
+                if (val >= 0) {
+                    const grd = ctx.createLinearGradient(x, midY - barH, x, midY);
+                    grd.addColorStop(0, successColor);
+                    grd.addColorStop(1, isDark ? 'rgba(48,209,88,0.3)' : 'rgba(52,199,89,0.3)');
+                    ctx.fillStyle = grd;
                     ctx.beginPath();
-                    ctx.arc(x, y, 3.5, 0, Math.PI * 2);
-                    ctx.fillStyle = data[i] >= 0 ? '#34C759' : '#FF5A5F';
+                    ctx.roundRect(x, midY - barH, barW, barH, [3, 3, 0, 0]);
+                    ctx.fill();
+                } else {
+                    const grd = ctx.createLinearGradient(x, midY, x, midY + barH);
+                    grd.addColorStop(0, isDark ? 'rgba(255,69,58,0.3)' : 'rgba(255,59,48,0.3)');
+                    grd.addColorStop(1, dangerColor);
+                    ctx.fillStyle = grd;
+                    ctx.beginPath();
+                    ctx.roundRect(x, midY, barW, barH, [0, 0, 3, 3]);
                     ctx.fill();
                 }
 
-                // Day labels (show every few days to avoid crowding)
-                if ((i + 1) % 5 === 1 || i === data.length - 1) {
-                    ctx.fillStyle = '#999';
-                    ctx.font = '9px Kanit';
-                    ctx.fillText(i + 1, x, H - 8);
+                // Today highlight
+                if (isToday && val !== 0) {
+                    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.15)';
+                    ctx.lineWidth = 1;
+                    const ry = val >= 0 ? midY - barH : midY;
+                    ctx.beginPath();
+                    ctx.roundRect(x - 1, ry - 1, barW + 2, barH + 2, 4);
+                    ctx.stroke();
+                }
+
+                // Day labels
+                if (showDays <= 15 || (i + 1) % 3 === 1 || i === data.length - 1) {
+                    ctx.fillStyle = isToday ? (isDark ? '#fff' : '#333') : labelColor;
+                    ctx.font = isToday ? 'bold 9px Kanit' : '9px Kanit';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(i + 1, x + barW / 2, H - 10);
                 }
             }
+
+            // Draw cumulative curve overlay
+            ctx.beginPath();
+            for (let i = 0; i < cumul.length; i++) {
+                const x = padL + i * gap + gap / 2;
+                const y = midY - (cumul[i] / maxCum) * (chartH / 2 - 8);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.strokeStyle = curveColor;
+            ctx.lineWidth = 2;
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+            ctx.stroke();
+
+            // Fill under cumulative curve
+            const lastCX = padL + (cumul.length - 1) * gap + gap / 2;
+            ctx.lineTo(lastCX, midY);
+            ctx.lineTo(padL + gap / 2, midY);
+            ctx.closePath();
+            const cGrd = ctx.createLinearGradient(0, padT, 0, midY + chartH / 4);
+            cGrd.addColorStop(0, isDark ? 'rgba(100,210,255,0.15)' : 'rgba(74,144,226,0.12)');
+            cGrd.addColorStop(1, 'rgba(74,144,226,0)');
+            ctx.fillStyle = cGrd;
+            ctx.fill();
+
+            // Cumulative dots at endpoints
+            const firstCX = padL + gap / 2;
+            const firstCY = midY - (cumul[0] / maxCum) * (chartH / 2 - 8);
+            const lastCY = midY - (cumul[cumul.length - 1] / maxCum) * (chartH / 2 - 8);
+            // End dot
+            ctx.beginPath();
+            ctx.arc(lastCX, lastCY, 4, 0, Math.PI * 2);
+            ctx.fillStyle = curveColor;
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(lastCX, lastCY, 2, 0, Math.PI * 2);
+            ctx.fillStyle = isDark ? '#1C1C1E' : '#fff';
+            ctx.fill();
+
+            // Total label next to last dot
+            const totalVal = cumul[cumul.length - 1];
+            ctx.fillStyle = curveColor;
+            ctx.font = 'bold 10px Kanit';
+            ctx.textAlign = 'left';
+            const labelX = lastCX + 6 > W - padR - 30 ? lastCX - 40 : lastCX + 6;
+            ctx.fillText((totalVal >= 0 ? '+' : '') + '$' + totalVal.toFixed(1), labelX, lastCY + 3);
         }
 
         // Fetch every 200 milliseconds 
