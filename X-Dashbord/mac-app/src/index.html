@@ -166,7 +166,7 @@
       display: flex;
       gap: 14px;
       width: 100%;
-      max-width: 520px;
+      max-width: 780px;
     }
 
     .card {
@@ -214,6 +214,11 @@
       box-shadow: 0 0 6px var(--green);
     }
 
+    .card.quota .card-dot {
+      background: var(--purple);
+      box-shadow: 0 0 6px var(--purple);
+    }
+
     .card-label {
       font-size: 12px;
       font-weight: 500;
@@ -233,6 +238,10 @@
 
     .card.dashboard .card-title {
       color: var(--green);
+    }
+
+    .card.quota .card-title {
+      color: var(--purple);
     }
 
     .card-desc {
@@ -439,6 +448,21 @@
           </svg>
         </div>
       </div>
+
+      <div class="card quota" onclick="openPage('quota')">
+        <div class="card-header">
+          <div class="card-dot"></div>
+          <span class="card-label">Model Quota</span>
+        </div>
+        <div class="card-title">Antigravity</div>
+        <div class="card-desc">Check AI Quota usage</div>
+        <div class="card-icon-br">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+          </svg>
+        </div>
+      </div>
     </div>
 
     <div class="status-row">
@@ -483,9 +507,10 @@
 
     const URLS = {
       server: 'https://x-server.xea.dpdns.org',
-      dashboard: 'https://xea.dpdns.org'
+      dashboard: 'https://xea.dpdns.org',
+      quota: 'https://quota.xea.dpdns.org'
     };
-    const LABELS = { server: 'Server Control', dashboard: 'EA Dashboard' };
+    const LABELS = { server: 'Server Control', dashboard: 'EA Dashboard', quota: 'Model Quota' };
 
     function openPage(type) {
       currentPage = type;
