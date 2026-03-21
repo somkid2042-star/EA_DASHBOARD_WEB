@@ -561,10 +561,8 @@
 
         // Remove account
         function removeAccount(id) {
-            if (confirm('Are you sure you want to remove this account?')) {
-                accounts = accounts.filter(acc => acc.id !== id);
-                saveAccounts();
-            }
+            accounts = accounts.filter(acc => acc.id !== id);
+            saveAccounts();
         }
 
         // Single check
