@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Model Quota Antigravity</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Kanit:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0"
+        rel="stylesheet">
+    <style>
+        /* ===== Reset & Base ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        *::-webkit-scrollbar {
+            display: none;
+        }
+
+        html,
+        body {
+            scrollbar-width: none;
+        }
+
+        :root,
+        [data-theme="dark"] {
+            --bg: #0f172a;
+            /* matches Acorn style */
+            --card: #1e293b;
+            --card-border: rgba(255, 255, 255, 0.05);
+            --text: #f8fafc;
+            --text2: #cbd5e1;
+            --text3: #94a3b8;
+
+            --purple: #8b5cf6;
+            --purple-bg: rgba(139, 92, 246, 0.15);
+            --green: #10b981;
+            --green-bg: rgba(16, 185, 129, 0.15);
+            --orange: #f59e0b;
+            --orange-bg: rgba(245, 158, 11, 0.15);
+            --red: #ef4444;
+            --red-bg: rgba(239, 68, 68, 0.15);
+
+            --input-bg: rgba(0, 0, 0, 0.2);
+            --input-border: rgba(255, 255, 255, 0.1);
+            --placeholder: #64748b;
+        }
+
+        [data-theme="light"] {
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --card-border: rgba(0, 0, 0, 0.05);
+            --text: #0f172a;
+            --text2: #475569;
+            --text3: #64748b;
+
+            --purple: #7c3aed;
+            --purple-bg: rgba(124, 58, 237, 0.1);
+            --green: #059669;
+            --green-bg: rgba(5, 150, 105, 0.1);
+            --orange: #d97706;
+            --orange-bg: rgba(217, 119, 6, 0.1);
+            --red: #dc2626;
+            --red-bg: rgba(220, 38, 38, 0.1);
+
+            --input-bg: #f1f5f9;
+            --input-border: rgba(0, 0, 0, 0.1);
+            --placeholder: #94a3b8;
+        }
+
+        body {
+            font-family: 'Inter', 'Kanit', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        /* ===== Layout ===== */
+        .container {
+            width: 100%;
+            max-width: 900px;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 30px;
+        }
+
+        .header-left h1 {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-left h1 .material-symbols-rounded {
+            color: var(--purple);
+            font-size: 32px;
+        }
+
+        .header-left p {
+            font-size: 14px;
+            color: var(--text2);
+            margin-top: 4px;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 14px;
+        }
+
+        /* Stats Row */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text2);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: 800;
+            color: var(--text);
+            line-height: 1;
+        }
+
+        .stat-value.purple {
+            color: var(--purple);
+        }
+
+        .stat-value.green {
+            color: var(--green);
+        }
+
+        .stat-value.red {
+            color: var(--red);
+        }
+
+        /* Form */
+        .add-form {
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 30px;
+            display: flex;
+            gap: 16px;
+            align-items: flex-end;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .input-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .input-group label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text2);
+        }
+
+        .input-group input {
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            color: var(--text);
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .input-group input:focus {
+            border-color: var(--purple);
+        }
+
+        .input-group input::placeholder {
+            color: var(--placeholder);
+        }
+
+        .btn {
+            background: var(--purple);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            height: 44px;
+            /* Matches input height */
+        }
+
+        .btn:hover {
+            background: #7c3aed;
+            transform: translateY(-1px);
+        }
+
+        .btn.secondary {
+            background: var(--input-bg);
+            color: var(--text);
+            border: 1px solid var(--input-border);
+        }
+
+        .btn.secondary:hover {
+            background: rgba(139, 92, 246, 0.1);
+            border-color: var(--purple);
+            color: var(--purple);
+        }
+
+        .btn-icon {
+            padding: 10px;
+            height: 40px;
+            width: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--input-bg);
+            color: var(--text2);
+            border: 1px solid var(--input-border);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-icon:hover {
+            background: var(--red-bg);
+            color: var(--red);
+            border-color: var(--red);
+        }
+
+        /* Accounts List */
+        .accounts-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .accounts-header h2 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .accounts-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* Account Card */
+        .account-card {
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+
+        .account-card:hover {
+            transform: translateX(4px);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .acc-info {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex: 1;
+        }
+
+        .acc-email {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-badge {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .status-badge.active {
+            background: var(--green-bg);
+            color: var(--green);
+        }
+
+        .status-badge.exhausted {
+            background: var(--red-bg);
+            color: var(--red);
+        }
+
+        .status-badge.checking {
+            background: var(--orange-bg);
+            color: var(--orange);
+        }
+
+        .acc-meta {
+            font-size: 12px;
+            color: var(--text3);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-top: 4px;
+        }
+
+        .acc-meta span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .acc-meta .material-symbols-rounded {
+            font-size: 14px;
+        }
+
+        /* Progress Bar */
+        .acc-usage {
+            flex: 1;
+            max-width: 200px;
+            margin: 0 40px;
+        }
+
+        .usage-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text2);
+            margin-bottom: 6px;
+        }
+
+        .progress-track {
+            height: 8px;
+            background: var(--input-bg);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            background: var(--purple);
+            border-radius: 4px;
+            transition: width 0.5s ease, background-color 0.3s;
+        }
+
+        .progress-fill.warning {
+            background: var(--orange);
+        }
+
+        .progress-fill.danger {
+            background: var(--red);
+        }
+
+        .acc-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        /* Zero State */
+        .zero-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text3);
+        }
+
+        .zero-state .material-symbols-rounded {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .zero-state h3 {
+            font-size: 18px;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <div class="header">
+            <div class="header-left">
+                <h1><span class="material-symbols-rounded">psychiatry</span> Model Quota Antigravity</h1>
+                <p>ตรวจสอบปริมาณการใช้งาน AI Quota สลาก Antigravity จากหลายบัญชี</p>
+            </div>
+            <div class="header-right">
+                <button class="btn secondary" onclick="checkAllQuotas()">
+                    <span class="material-symbols-rounded">sync</span> Check All
+                </button>
+            </div>
+        </div>
+
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-title">Total Accounts</div>
+                <div class="stat-value purple" id="stat-total">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">Active (🟢 OK)</div>
+                <div class="stat-value green" id="stat-active">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">Exhausted (🔴 Reached)</div>
+                <div class="stat-value red" id="stat-exhausted">0</div>
+            </div>
+        </div>
+
+        <form class="add-form" id="addAccountForm">
+            <div class="input-group">
+                <label>Email Address</label>
+                <input type="email" id="emailInput" placeholder="example@gmail.com" required autocomplete="off">
+            </div>
+            <div class="input-group">
+                <label>API Key (Optional / Setup)</label>
+                <input type="password" id="keyInput" placeholder="AI Studio / API Key" autocomplete="off">
+            </div>
+            <button type="submit" class="btn">
+                <span class="material-symbols-rounded">add</span> Add Account
+            </button>
+        </form>
+
+        <div class="accounts-header">
+            <h2>Tracked Accounts</h2>
+        </div>
+
+        <div class="accounts-list" id="accountsList">
+            <!-- Generated via JS -->
+        </div>
+
+    </div>
+
+    <script>
+        // Theme sync with parent (index.html)
+        function syncTheme() {
+            const savedTheme = localStorage.getItem('x-theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        }
+        syncTheme();
+        window.addEventListener('storage', syncTheme); // If changed in parent
+
+        // App State
+        let accounts = JSON.parse(localStorage.getItem('antigravity_accounts')) || [];
+
+        // Save to local storage
+        function saveAccounts() {
+            localStorage.setItem('antigravity_accounts', JSON.stringify(accounts));
+            render();
+        }
+
+        // Add new account
+        document.getElementById('addAccountForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('emailInput').value.trim();
+            const key = document.getElementById('keyInput').value.trim();
+
+            if (!email) return;
+
+            // Check duplicate
+            if (accounts.some(acc => acc.email === email)) {
+                alert("This email is already added!");
+                return;
+            }
+
+            accounts.push({
+                id: Date.now().toString(),
+                email,
+                key: key || '-',
+                status: 'checking', // active, exhausted, checking
+                usage: 0,
+                limit: 1500, // mock limit
+                resetTime: getNextResetTime(),
+                lastChecked: new Date().toISOString()
+            });
+
+            document.getElementById('emailInput').value = '';
+            document.getElementById('keyInput').value = '';
+
+            saveAccounts();
+            // Auto check the newly added account
+            setTimeout(() => mockCheckQuota(accounts[accounts.length - 1].id), 800);
+        });
+
+        // Remove account
+        function removeAccount(id) {
+            if (confirm('Are you sure you want to remove this account?')) {
+                accounts = accounts.filter(acc => acc.id !== id);
+                saveAccounts();
+            }
+        }
+
+        // Single check
+        function checkQuota(id) {
+            const acc = accounts.find(a => a.id === id);
+            if (acc) {
+                acc.status = 'checking';
+                saveAccounts();
+                setTimeout(() => mockCheckQuota(id), 1500 + Math.random() * 1000);
+            }
+        }
+
+        // Check all
+        function checkAllQuotas() {
+            accounts.forEach(acc => {
+                acc.status = 'checking';
+            });
+            saveAccounts();
+
+            accounts.forEach((acc, i) => {
+                setTimeout(() => mockCheckQuota(acc.id), (i + 1) * 800);
+            });
+        }
+
+        // Mock API Check
+        function mockCheckQuota(id) {
+            const acc = accounts.find(a => a.id === id);
+            if (!acc) return;
+
+            // Simulate a random usage update
+            acc.lastChecked = new Date().toISOString();
+            const randomUsage = Math.floor(Math.random() * (acc.limit + 200));
+            acc.usage = randomUsage;
+
+            if (acc.usage >= acc.limit) {
+                acc.status = 'exhausted';
+                acc.usage = acc.limit; // cap at 100%
+            } else {
+                acc.status = 'active';
+            }
+
+            saveAccounts();
+        }
+
+        // Get mock reset time (Midnight UTC)
+        function getNextResetTime() {
+            const now = new Date();
+            const reset = new Date();
+            reset.setUTCHours(24, 0, 0, 0); // Next midnight UTC
+            return reset.toISOString();
+        }
+
+        // Format relative time (e.g. "Just now", "5 mins ago")
+        function timeAgo(dateString) {
+            const date = new Date(dateString);
+            const seconds = Math.floor((new Date() - date) / 1000);
+            if (seconds < 60) return "Just now";
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return `${minutes} mins ago`;
+            const hours = Math.floor(minutes / 60);
+            return `${hours} hrs ago`;
+        }
+
+        // Format remaining time (e.g. "5h 30m remaining")
+        function timeRemaining(dateString) {
+            const date = new Date(dateString);
+            const diff = date - new Date();
+            if (diff <= 0) return "Resetting...";
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            return `${hours}h ${mins}m`;
+        }
+
+        function render() {
+            // Stats
+            const total = accounts.length;
+            const active = accounts.filter(a => a.status === 'active').length;
+            const exhausted = accounts.filter(a => a.status === 'exhausted').length;
+
+            document.getElementById('stat-total').innerText = total;
+            document.getElementById('stat-active').innerText = active;
+            document.getElementById('stat-exhausted').innerText = exhausted;
+
+            // List
+            const listEl = document.getElementById('accountsList');
+            listEl.innerHTML = '';
+
+            if (accounts.length === 0) {
+                listEl.innerHTML = `
+          <div class="zero-state">
+            <span class="material-symbols-rounded">inbox</span>
+            <h3>No Accounts Tracked</h3>
+            <p>Add an email above to start monitoring quota.</p>
+          </div>
+        `;
+                return;
+            }
+
+            accounts.forEach(acc => {
+                const percent = Math.min(100, (acc.usage / acc.limit) * 100);
+                let progressClass = '';
+                if (percent > 85) progressClass = 'danger';
+                else if (percent > 60) progressClass = 'warning';
+
+                let badgeIcon = 'check_circle';
+                let badgeText = 'Active';
+                if (acc.status === 'exhausted') { badgeIcon = 'error'; badgeText = 'Exhausted'; }
+                if (acc.status === 'checking') { badgeIcon = 'sync'; badgeText = 'Checking'; }
+
+                const card = document.createElement('div');
+                card.className = 'account-card';
+                card.innerHTML = `
+          <div class="acc-info">
+            <div class="acc-email">
+              ${acc.email}
+              <div class="status-badge ${acc.status}">
+                <span class="material-symbols-rounded" style="font-size: 14px;">${badgeIcon}</span> ${badgeText}
+              </div>
+            </div>
+            <div class="acc-meta">
+              <span title="Last Checked"><span class="material-symbols-rounded">history</span> ${timeAgo(acc.lastChecked)}</span>
+              <span title="Resets in"><span class="material-symbols-rounded">update</span> Resets in ${timeRemaining(acc.resetTime)}</span>
+            </div>
+          </div>
+
+          <div class="acc-usage">
+            <div class="usage-header">
+              <span>Usage</span>
+              <span>${acc.usage.toLocaleString()} / ${acc.limit.toLocaleString()} RPD</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill ${progressClass}" style="width: ${percent}%;"></div>
+            </div>
+          </div>
+
+          <div class="acc-actions">
+            <button class="btn-icon" onclick="checkQuota('${acc.id}')" title="Check Quota Now" ${acc.status === 'checking' ? 'disabled' : ''}>
+              <span class="material-symbols-rounded">${acc.status === 'checking' ? 'motion_photos_on' : 'refresh'}</span>
+            </button>
+            <button class="btn-icon" onclick="removeAccount('${acc.id}')" title="Remove Account">
+              <span class="material-symbols-rounded">delete</span>
+            </button>
+          </div>
+        `;
+                listEl.appendChild(card);
+            });
+        }
+
+        // Initial render
+        render();
+
+        // Auto update relative times every minute
+        setInterval(render, 60000);
+    </script>
+</body>
+
+</html>
