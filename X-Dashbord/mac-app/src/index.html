@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 
 <head>
   <meta charset="UTF-8" />
@@ -15,15 +15,51 @@
       box-sizing: border-box;
     }
 
-    :root {
-      --bg: #1a1a2e;
-      --card: #252540;
-      --card-border: rgba(255, 255, 255, 0.06);
-      --green: #00e676;
+    /* ===== Light Theme ===== */
+    :root,
+    [data-theme="light"] {
+      --bg: #f0f2f5;
+      --card: #ffffff;
+      --card-border: rgba(0, 0, 0, 0.06);
+      --card-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+      --card-hover: 0 6px 24px rgba(0, 0, 0, 0.1);
+      --bar-bg: #ffffff;
+      --green: #00c853;
+      --green-bg: rgba(0, 200, 83, 0.08);
       --orange: #ff9100;
-      --text: #ffffff;
-      --text2: #8e8ea0;
-      --text3: #5a5a6e;
+      --orange-bg: rgba(255, 145, 0, 0.08);
+      --text: #1a1a2e;
+      --text2: #6e6e80;
+      --text3: #9e9eb0;
+      --btn-bg: rgba(0, 0, 0, 0.04);
+      --btn-border: rgba(0, 0, 0, 0.08);
+      --btn-hover: rgba(0, 0, 0, 0.08);
+      --icon-br-bg: rgba(0, 0, 0, 0.03);
+      --icon-br-border: rgba(0, 0, 0, 0.06);
+      --toggle-bg: rgba(0, 0, 0, 0.06);
+    }
+
+    /* ===== Dark Theme (Antigravity) ===== */
+    [data-theme="dark"] {
+      --bg: #0d0d1a;
+      --card: #161628;
+      --card-border: rgba(99, 102, 241, 0.12);
+      --card-shadow: 0 2px 16px rgba(0, 0, 0, 0.3);
+      --card-hover: 0 8px 32px rgba(99, 102, 241, 0.1);
+      --bar-bg: rgba(13, 13, 26, 0.95);
+      --green: #22d3ee;
+      --green-bg: rgba(34, 211, 238, 0.08);
+      --orange: #a78bfa;
+      --orange-bg: rgba(167, 139, 250, 0.08);
+      --text: #e2e8f0;
+      --text2: #94a3b8;
+      --text3: #64748b;
+      --btn-bg: rgba(99, 102, 241, 0.08);
+      --btn-border: rgba(99, 102, 241, 0.15);
+      --btn-hover: rgba(99, 102, 241, 0.15);
+      --icon-br-bg: rgba(99, 102, 241, 0.06);
+      --icon-br-border: rgba(99, 102, 241, 0.12);
+      --toggle-bg: rgba(99, 102, 241, 0.1);
     }
 
     body {
@@ -35,13 +71,56 @@
       display: flex;
       flex-direction: column;
       -webkit-font-smoothing: antialiased;
+      transition: background 0.3s, color 0.3s;
     }
 
-    /* ===== Drag Region (invisible) ===== */
+    /* ===== Drag Region ===== */
     .drag-region {
       height: 28px;
       -webkit-app-region: drag;
       flex-shrink: 0;
+      position: relative;
+    }
+
+    /* ===== Theme Toggle ===== */
+    .theme-toggle {
+      position: absolute;
+      top: 6px;
+      right: 12px;
+      -webkit-app-region: no-drag;
+      width: 44px;
+      height: 22px;
+      background: var(--toggle-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      padding: 2px;
+      transition: all 0.3s;
+    }
+
+    .theme-toggle .toggle-knob {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--text2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s;
+      transform: translateX(0);
+    }
+
+    [data-theme="dark"] .theme-toggle .toggle-knob {
+      transform: translateX(22px);
+      background: #6366f1;
+    }
+
+    .toggle-knob svg {
+      width: 11px;
+      height: 11px;
+      color: white;
     }
 
     /* ===== Main Content ===== */
@@ -55,7 +134,6 @@
       -webkit-app-region: no-drag;
     }
 
-    /* ===== Header ===== */
     .header {
       text-align: center;
       margin-bottom: 30px;
@@ -72,7 +150,6 @@
     .header p {
       font-size: 12px;
       color: var(--text2);
-      font-weight: 400;
     }
 
     /* ===== Cards ===== */
@@ -93,19 +170,18 @@
       transition: all 0.25s ease;
       position: relative;
       min-height: 140px;
+      box-shadow: var(--card-shadow);
     }
 
     .card:hover {
       transform: translateY(-3px);
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
-      border-color: rgba(255, 255, 255, 0.1);
+      box-shadow: var(--card-hover);
     }
 
     .card:active {
       transform: translateY(-1px);
     }
 
-    /* Card top: dot + label */
     .card-header {
       display: flex;
       align-items: center;
@@ -135,7 +211,6 @@
       color: var(--text2);
     }
 
-    /* Card main text */
     .card-title {
       font-size: 26px;
       font-weight: 800;
@@ -144,7 +219,7 @@
     }
 
     .card.server .card-title {
-      color: var(--text2);
+      color: var(--orange);
     }
 
     .card.dashboard .card-title {
@@ -154,18 +229,16 @@
     .card-desc {
       font-size: 11px;
       color: var(--text3);
-      font-weight: 400;
     }
 
-    /* Card bottom-right icon */
     .card-icon-br {
       position: absolute;
       bottom: 14px;
       right: 14px;
       width: 36px;
       height: 36px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: var(--icon-br-bg);
+      border: 1px solid var(--icon-br-border);
       border-radius: 8px;
       display: flex;
       align-items: center;
@@ -208,15 +281,14 @@
       flex: 1;
       width: 100%;
       border: none;
-      background: var(--bg);
     }
 
     /* ===== Bottom Bar ===== */
     .bottombar {
       height: 32px;
-      background: rgba(20, 20, 36, 0.95);
+      background: var(--bar-bg);
       backdrop-filter: blur(12px);
-      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      border-top: 1px solid var(--card-border);
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -224,6 +296,7 @@
       z-index: 100;
       flex-shrink: 0;
       -webkit-app-region: no-drag;
+      transition: background 0.3s;
     }
 
     .bar-status {
@@ -239,9 +312,12 @@
     }
 
     .bar-btn {
+      display: flex;
+      align-items: center;
+      gap: 4px;
       padding: 3px 10px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: var(--btn-bg);
+      border: 1px solid var(--btn-border);
       border-radius: 5px;
       color: var(--text2);
       font-size: 10px;
@@ -252,8 +328,13 @@
     }
 
     .bar-btn:hover {
-      background: rgba(255, 255, 255, 0.1);
+      background: var(--btn-hover);
       color: var(--text);
+    }
+
+    .bar-btn svg {
+      width: 12px;
+      height: 12px;
     }
 
     .bar-ver {
@@ -290,8 +371,23 @@
 
 <body>
 
-  <!-- Drag Region -->
-  <div class="drag-region"></div>
+  <!-- Drag Region + Theme Toggle -->
+  <div class="drag-region">
+    <div class="theme-toggle" onclick="toggleTheme()">
+      <div class="toggle-knob">
+        <svg id="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round">
+          <circle cx="12" cy="12" r="5" />
+          <path
+            d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+        </svg>
+        <svg id="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" style="display:none">
+          <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
+        </svg>
+      </div>
+    </div>
+  </div>
 
   <!-- Main Page -->
   <div id="main-page">
@@ -301,7 +397,6 @@
     </div>
 
     <div class="cards">
-      <!-- Server Card -->
       <div class="card server" onclick="openPage('server')">
         <div class="card-header">
           <div class="card-dot"></div>
@@ -319,7 +414,6 @@
         </div>
       </div>
 
-      <!-- Dashboard Card -->
       <div class="card dashboard" onclick="openPage('dashboard')">
         <div class="card-header">
           <div class="card-dot"></div>
@@ -353,8 +447,24 @@
   <div class="bottombar">
     <span class="bar-status" id="bottom-status">เลือกเมนู</span>
     <div class="bar-actions">
-      <button class="bar-btn" onclick="refreshPage()">⟳ Refresh</button>
-      <button class="bar-btn" onclick="goHome()">◀ Home</button>
+      <button class="bar-btn" onclick="refreshPage()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+          stroke-linejoin="round">
+          <path d="M21.5 2v6h-6" />
+          <path d="M2.5 22v-6h6" />
+          <path d="M3.34 8.5A9.5 9.5 0 0121.5 8l.01.01" />
+          <path d="M20.66 15.5A9.5 9.5 0 012.5 16l-.01-.01" />
+        </svg>
+        Refresh
+      </button>
+      <button class="bar-btn" onclick="goHome()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+          stroke-linejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+          <polyline points="9 22 9 12 15 12 15 22" />
+        </svg>
+        Home
+      </button>
       <span class="bar-ver">v1.5.0</span>
     </div>
   </div>
@@ -387,6 +497,26 @@
       document.getElementById('main-page').style.display = 'flex';
       document.getElementById('bottom-status').textContent = 'เลือกเมนู';
     }
+
+    // Theme toggle
+    function toggleTheme() {
+      const html = document.documentElement;
+      const isDark = html.getAttribute('data-theme') === 'dark';
+      html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+      localStorage.setItem('x-theme', isDark ? 'light' : 'dark');
+      updateThemeIcon();
+    }
+
+    function updateThemeIcon() {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      document.getElementById('theme-icon-sun').style.display = isDark ? 'none' : 'block';
+      document.getElementById('theme-icon-moon').style.display = isDark ? 'block' : 'none';
+    }
+
+    // Load saved theme
+    const savedTheme = localStorage.getItem('x-theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateThemeIcon();
 
     document.addEventListener('keydown', (e) => {
       if (e.metaKey && e.key === 'r') { e.preventDefault(); refreshPage(); }
