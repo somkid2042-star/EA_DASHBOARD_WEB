@@ -479,6 +479,13 @@
                 <input type="email" id="emailInput" placeholder="example@gmail.com" required autocomplete="off">
             </div>
             <div class="input-group">
+                <label>AI Model</label>
+                <select id="modelInput">
+                    <option value="Gemini 3.1 Pro (High)">Gemini 3.1 Pro (High)</option>
+                    <option value="Claude Opus 4.6 (Thinking)">Claude Opus 4.6 (Thinking)</option>
+                </select>
+            </div>
+            <div class="input-group">
                 <label>API Key (Optional / Setup)</label>
                 <input type="password" id="keyInput" placeholder="AI Studio / API Key" autocomplete="off">
             </div>
@@ -519,23 +526,27 @@
         document.getElementById('addAccountForm').addEventListener('submit', (e) => {
             e.preventDefault();
             const email = document.getElementById('emailInput').value.trim();
+            const model = document.getElementById('modelInput').value;
             const key = document.getElementById('keyInput').value.trim();
 
             if (!email) return;
 
-            // Check duplicate
-            if (accounts.some(acc => acc.email === email)) {
-                alert("This email is already added!");
+            // Check duplicate (same email + same model)
+            if (accounts.some(acc => acc.email === email && acc.model === model)) {
+                alert(`This email is already tracking ${model}!`);
                 return;
             }
+
+            const limit = model.includes('Gemini') ? 1500 : 500; // mock different limits
 
             accounts.push({
                 id: Date.now().toString(),
                 email,
+                model,
                 key: key || '-',
                 status: 'checking', // active, exhausted, checking
                 usage: 0,
-                limit: 1500, // mock limit
+                limit: limit,
                 resetTime: getNextResetTime(),
                 lastChecked: new Date().toISOString()
             });
@@ -672,6 +683,9 @@
               <div class="status-badge ${acc.status}">
                 <span class="material-symbols-rounded" style="font-size: 14px;">${badgeIcon}</span> ${badgeText}
               </div>
+            </div>
+            <div style="font-size: 13px; font-weight: 500; color: var(--text2); margin-top: 4px;">
+              ${acc.model || 'Unknown Model'}
             </div>
             <div class="acc-meta">
               <span title="Last Checked"><span class="material-symbols-rounded">history</span> ${timeAgo(acc.lastChecked)}</span>
