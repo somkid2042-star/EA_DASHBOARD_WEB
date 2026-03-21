@@ -940,152 +940,269 @@ async fn serve_control_page() -> impl IntoResponse {
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>X-Server Control</title>
-<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet">
 <style>
-:root {
-  --primary-blue:#4A90E2;--bg-color:#F5F7FA;--card-bg:#FFFFFF;--text-main:#333333;
-  --text-muted:#8E8E93;--border-color:#E5E5EA;--success:#34C759;--danger:#FF3B30;
-  --warning:#FF9500;--input-bg:#F2F2F7;
+:root{
+  --bg:#f3f3f3;--card:#fff;--sidebar:#fff;--text:#333;--muted:#8e8e93;
+  --border:#e8e8ed;--green:#4cb050;--green-bg:rgba(76,176,80,.08);--green-light:#e8f5e9;
+  --orange:#ff9500;--orange-bg:rgba(255,149,0,.08);--red:#ff3b30;--red-bg:rgba(255,59,48,.08);
+  --blue:#4a90e2;--blue-bg:rgba(74,144,226,.08);--purple:#af52de;--purple-bg:rgba(175,82,222,.08);
+  --input-bg:#f5f5f5;--hover:#f7f7f7;--shadow:0 1px 3px rgba(0,0,0,.06);
 }
-.dark {
-  --primary-blue:#64D2FF;--bg-color:#000000;--card-bg:#1C1C1E;--text-main:#F2F2F7;
-  --text-muted:#98989D;--border-color:#38383A;--success:#30D158;--danger:#FF453A;
-  --warning:#FF9F0A;--input-bg:#2C2C2E;
+.dark{
+  --bg:#1a1a2e;--card:#22223a;--sidebar:#1e1e32;--text:#e8e8f0;--muted:#8888aa;
+  --border:#2e2e48;--green:#4cb050;--green-bg:rgba(76,176,80,.12);--green-light:rgba(76,176,80,.15);
+  --orange:#ffab40;--orange-bg:rgba(255,171,64,.12);--red:#ff5252;--red-bg:rgba(255,82,82,.12);
+  --blue:#64b5f6;--blue-bg:rgba(100,181,246,.12);--purple:#ce93d8;--purple-bg:rgba(206,147,216,.12);
+  --input-bg:#2a2a44;--hover:#2a2a44;--shadow:0 1px 4px rgba(0,0,0,.3);
 }
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:'Kanit',sans-serif;background:var(--bg-color);color:var(--text-main);
-  display:flex;justify-content:center;min-height:100vh;transition:background-color .3s,color .3s}
-.app{width:100%;max-width:600px;background:var(--bg-color);min-height:100vh;display:flex;flex-direction:column;
-  box-shadow:0 0 20px rgba(0,0,0,.1)}
-.ms{font-family:'Material Symbols Rounded';font-weight:normal;font-size:20px;vertical-align:middle}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Kanit',sans-serif;background:var(--bg);color:var(--text);display:flex;height:100vh;overflow:hidden;transition:background .3s,color .3s}
+.ms{font-family:'Material Symbols Rounded';font-weight:normal;font-size:22px;vertical-align:middle}
 
-.header{background:var(--card-bg);padding:14px 16px;display:flex;align-items:center;
-  justify-content:space-between;position:sticky;top:0;z-index:10;
-  box-shadow:0 1px 4px rgba(0,0,0,.08);transition:background-color .3s}
-.header-left{display:flex;align-items:center;gap:10px}
-.header-title{font-size:18px;font-weight:500}
-.header-ver{font-size:12px;color:var(--text-muted);background:var(--input-bg);
-  padding:3px 10px;border-radius:12px;border:1px solid var(--border-color);font-weight:400}
-.status-dot{width:10px;height:10px;background:var(--success);border-radius:50%;
-  box-shadow:0 0 0 3px rgba(0,210,122,.2);animation:pulse 2s infinite}
-@keyframes pulse{0%{transform:scale(.95);box-shadow:0 0 0 0 rgba(0,210,122,.4)}
-  70%{transform:scale(1);box-shadow:0 0 0 6px rgba(0,210,122,0)}
-  100%{transform:scale(.95);box-shadow:0 0 0 0 rgba(0,210,122,0)}}
-.theme-btn{background:none;border:none;cursor:pointer;color:var(--text-muted);
-  padding:6px;border-radius:8px;transition:background .2s;display:flex;align-items:center}
-.theme-btn:hover{background:var(--input-bg)}
+/* === Sidebar === */
+.sidebar{width:56px;background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:4px;flex-shrink:0;transition:background .3s}
+.sb-logo{width:36px;height:36px;background:var(--green);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;cursor:pointer}
+.sb-logo .ms{color:#fff;font-size:20px}
+.sb-item{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;color:var(--muted);position:relative}
+.sb-item:hover{background:var(--hover);color:var(--text)}
+.sb-item.active{background:var(--green-bg);color:var(--green)}
+.sb-item .badge{position:absolute;top:4px;right:4px;width:8px;height:8px;background:var(--orange);border-radius:50%}
+.sb-bottom{margin-top:auto;display:flex;flex-direction:column;gap:4px;align-items:center}
 
-.content{padding:16px;flex:1;overflow-y:auto}
-.card{background:var(--card-bg);border-radius:16px;padding:16px;margin-bottom:14px;
-  border:1px solid var(--border-color);transition:background-color .3s}
-.card-title{font-size:15px;font-weight:500;margin-bottom:14px;display:flex;align-items:center;gap:8px}
-.card-title .ms{color:var(--primary-blue)}
+/* === Main === */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
 
-.status-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.stat-item{background:var(--input-bg);border-radius:12px;padding:14px;
-  border:1px solid var(--border-color);transition:background .3s}
-.stat-label{font-size:11px;color:var(--text-muted);font-weight:400;margin-bottom:4px}
-.stat-value{font-size:18px;font-weight:500;letter-spacing:-.3px}
-.stat-value.ok{color:var(--success)}
+/* === Topbar === */
+.topbar{height:52px;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;flex-shrink:0;transition:background .3s}
+.top-left{display:flex;align-items:center;gap:12px}
+.top-title{font-size:16px;font-weight:500}
+.top-ver{font-size:11px;color:var(--muted);background:var(--input-bg);padding:2px 10px;border-radius:10px;border:1px solid var(--border)}
+.top-right{display:flex;align-items:center;gap:6px}
+.top-btn{width:36px;height:36px;border-radius:8px;border:none;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:all .15s;position:relative}
+.top-btn:hover{background:var(--hover);color:var(--text)}
+.top-btn .notif{position:absolute;top:6px;right:6px;width:16px;height:16px;background:var(--green);border-radius:50%;font-size:9px;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Kanit';font-weight:500}
+.avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--green),#81c784);display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff;font-weight:500;cursor:pointer}
 
-.mt5-table{width:100%;border-collapse:collapse;font-size:13px}
-.mt5-table th{text-align:left;padding:10px 8px;color:var(--text-muted);font-weight:400;
-  font-size:11px;border-bottom:1px solid var(--border-color);text-transform:uppercase;letter-spacing:.5px}
-.mt5-table td{padding:12px 8px;border-bottom:1px solid var(--border-color);font-weight:400}
-.mt5-table tr:last-child td{border-bottom:none}
-.mt5-table tr:hover td{background:var(--input-bg)}
-.profit-pos{color:var(--success);font-weight:500}
-.profit-neg{color:var(--danger);font-weight:500}
-.ver-ok{color:var(--success)} .ver-warn{color:var(--warning)}
-.empty{text-align:center;padding:24px;color:var(--text-muted);font-size:13px}
+/* === Content === */
+.content{flex:1;overflow-y:auto;padding:24px}
+.greeting{margin-bottom:20px}
+.greeting h2{font-size:22px;font-weight:600;margin-bottom:2px}
+.greeting p{font-size:12px;color:var(--muted)}
 
-.actions{display:flex;gap:10px;flex-wrap:wrap}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:12px 20px;border:none;
-  border-radius:12px;font-size:14px;font-weight:400;cursor:pointer;
-  transition:all .2s;font-family:'Kanit',sans-serif}
-.btn:active{transform:scale(.97)}
-.btn-update{background:var(--primary-blue);color:white}
-.btn-update:hover{opacity:.9}
-.btn-dash{background:rgba(52,199,89,.12);color:var(--success);border:1px solid rgba(52,199,89,.2)}
-.btn-dash:hover{background:rgba(52,199,89,.2)}
-.action-msg{margin-top:10px;font-size:13px;color:var(--text-muted)}
+/* === Grid === */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.section-title{font-size:14px;font-weight:500;margin-bottom:12px;display:flex;align-items:center;gap:6px}
 
-@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.card:nth-child(1){animation:fadeUp .3s ease-out}
-.card:nth-child(2){animation:fadeUp .3s ease-out .06s both}
-.card:nth-child(3){animation:fadeUp .3s ease-out .12s both}
+/* === Stats === */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:var(--shadow);transition:background .3s}
+.stat-label{font-size:11px;color:var(--muted);margin-bottom:4px}
+.stat-val{font-size:22px;font-weight:600;letter-spacing:-.5px}
+.stat-val.green{color:var(--green)} .stat-val.red{color:var(--red)} .stat-val.blue{color:var(--blue)}
+.stat-change{font-size:11px;margin-top:4px}
+.stat-change.up{color:var(--green)} .stat-change.down{color:var(--red)}
+
+/* === Quick Actions === */
+.qa-card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;transition:background .3s}
+.qa-item{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;transition:background .15s;border-bottom:1px solid var(--border)}
+.qa-item:last-child{border-bottom:none}
+.qa-item:hover{background:var(--hover)}
+.qa-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.qa-icon.green{background:var(--green-bg);color:var(--green)}
+.qa-icon.orange{background:var(--orange-bg);color:var(--orange)}
+.qa-icon.blue{background:var(--blue-bg);color:var(--blue)}
+.qa-icon.purple{background:var(--purple-bg);color:var(--purple)}
+.qa-text h4{font-size:13px;font-weight:500}
+.qa-text p{font-size:11px;color:var(--muted)}
+.qa-badge{margin-left:auto;font-size:10px;padding:2px 8px;border-radius:10px}
+.qa-badge.new{background:var(--red-bg);color:var(--red)}
+
+/* === Table === */
+.table-card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;transition:background .3s}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;padding:12px 14px;font-weight:400;font-size:11px;color:var(--muted);border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.5px}
+.tbl td{padding:12px 14px;border-bottom:1px solid var(--border)}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:var(--hover)}
+.status-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 10px;border-radius:10px;font-weight:500}
+.status-badge.active{background:var(--green-bg);color:var(--green)}
+.status-badge.warn{background:var(--orange-bg);color:var(--orange)}
+.profit-pos{color:var(--green);font-weight:500} .profit-neg{color:var(--red);font-weight:500}
+.empty-row{text-align:center;padding:30px 14px!important;color:var(--muted)}
+
+/* === Activity === */
+.activity-card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:16px;transition:background .3s}
+.act-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.act-item:last-child{border-bottom:none}
+.act-dot{width:10px;height:10px;border-radius:50%;margin-top:4px;flex-shrink:0}
+.act-dot.green{background:var(--green)} .act-dot.orange{background:var(--orange)} .act-dot.blue{background:var(--blue)} .act-dot.red{background:var(--red)}
+.act-info h4{font-size:13px;font-weight:500}
+.act-info p{font-size:11px;color:var(--muted)}
+
+.action-msg{margin-top:8px;font-size:12px;color:var(--muted);padding:0 16px 12px}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.stats-row{animation:fadeUp .3s ease-out}
+.grid-2{animation:fadeUp .3s ease-out .06s both}
 </style>
 </head>
 <body>
-<div class="app">
-  <div class="header">
-    <div class="header-left">
-      <div class="status-dot"></div>
-      <span class="header-title">Server Control</span>
-      <span class="header-ver" id="ver">...</span>
-    </div>
-    <button class="theme-btn" onclick="toggleTheme()"><span class="ms" id="theme-icon">dark_mode</span></button>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="sb-logo"><span class="ms">hub</span></div>
+  <div class="sb-item active" title="Dashboard"><span class="ms">dashboard</span></div>
+  <div class="sb-item" title="Connections"><span class="ms">device_hub</span><div class="badge"></div></div>
+  <div class="sb-item" title="Terminal"><span class="ms">terminal</span></div>
+  <div class="sb-item" title="Logs"><span class="ms">description</span></div>
+  <div class="sb-item" title="Update"><span class="ms">system_update</span></div>
+  <div class="sb-item" title="Settings"><span class="ms">tune</span></div>
+  <div class="sb-bottom">
+    <div class="sb-item" title="Help"><span class="ms">help</span></div>
+    <div class="sb-item" onclick="toggleTheme()" title="Theme"><span class="ms" id="theme-icon">dark_mode</span></div>
   </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="top-left">
+      <span class="top-title">X-Server</span>
+      <span class="top-ver" id="ver">...</span>
+    </div>
+    <div class="top-right">
+      <button class="top-btn"><span class="ms">search</span></button>
+      <button class="top-btn"><span class="ms">notifications</span><span class="notif" id="notif-count">0</span></button>
+      <button class="top-btn" onclick="toggleTheme()"><span class="ms" id="theme-icon2">dark_mode</span></button>
+      <div class="avatar">X</div>
+    </div>
+  </div>
+
+  <!-- Content -->
   <div class="content">
-    <div class="card">
-      <div class="card-title"><span class="ms">bolt</span> สถานะเซิร์ฟเวอร์</div>
-      <div class="status-grid">
-        <div class="stat-item"><div class="stat-label">Dashboard</div><div class="stat-value ok">● Running</div></div>
-        <div class="stat-item"><div class="stat-label">Control Panel</div><div class="stat-value ok">● Running</div></div>
-        <div class="stat-item"><div class="stat-label">EA Version</div><div class="stat-value" id="latest-ea">-</div></div>
-        <div class="stat-item"><div class="stat-label">EA เชื่อมต่อ</div><div class="stat-value" id="ea-count">0</div></div>
-      </div>
+    <div class="greeting">
+      <h2 id="greeting-text">Server Control</h2>
+      <p>Home / Server / Control Panel</p>
     </div>
-    <div class="card">
-      <div class="card-title"><span class="ms">monitoring</span> MT5 Instances</div>
-      <table class="mt5-table">
-        <thead><tr><th>Account</th><th>Symbol</th><th>EA</th><th>Ver</th><th>Equity</th><th>Profit</th><th>Orders</th></tr></thead>
-        <tbody id="mt5-body"><tr><td colspan="7" class="empty">ไม่มี EA เชื่อมต่อ</td></tr></tbody>
-      </table>
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-label">EA เชื่อมต่อ</div><div class="stat-val green" id="ea-count">0</div><div class="stat-change up" id="ea-status">● Online</div></div>
+      <div class="stat-card"><div class="stat-label">Dashboard</div><div class="stat-val green">Running</div><div class="stat-change up">● Port 3000</div></div>
+      <div class="stat-card"><div class="stat-label">Control Panel</div><div class="stat-val green">Running</div><div class="stat-change up">● Port 3001</div></div>
+      <div class="stat-card"><div class="stat-label">EA Version</div><div class="stat-val blue" id="latest-ea">-</div><div class="stat-change" id="ea-ver-status">Latest</div></div>
     </div>
-    <div class="card">
-      <div class="card-title"><span class="ms">settings</span> Actions</div>
-      <div class="actions">
-        <button class="btn btn-update" onclick="updateEA()"><span class="ms" style="font-size:18px">system_update</span> Update EA</button>
-        <button class="btn btn-dash" onclick="window.open('https://xea.dpdns.org','_blank')"><span class="ms" style="font-size:18px">dashboard</span> Open Dashboard</button>
+
+    <div class="grid-2">
+      <!-- MT5 Table -->
+      <div>
+        <div class="section-title">Connected MT5 Instances</div>
+        <div class="table-card">
+          <table class="tbl">
+            <thead><tr><th>Account</th><th>Symbol</th><th>EA</th><th>Ver</th><th>Equity</th><th>Profit</th><th>Orders</th></tr></thead>
+            <tbody id="mt5-body"><tr><td colspan="7" class="empty-row">ไม่มี EA เชื่อมต่อ</td></tr></tbody>
+          </table>
+        </div>
+        <div class="action-msg" id="action-status"></div>
       </div>
-      <div class="action-msg" id="action-status"></div>
+
+      <!-- Quick Actions + Activity -->
+      <div>
+        <div class="section-title">Quick Actions</div>
+        <div class="qa-card">
+          <div class="qa-item" onclick="updateEA()">
+            <div class="qa-icon green"><span class="ms">system_update</span></div>
+            <div class="qa-text"><h4>Update EA</h4><p>ส่งคำสั่งอัพเดท EA ทุกตัว</p></div>
+          </div>
+          <div class="qa-item" onclick="window.open('https://xea.dpdns.org','_blank')">
+            <div class="qa-icon orange"><span class="ms">dashboard</span></div>
+            <div class="qa-text"><h4>Open Dashboard</h4><p>เปิด EA Dashboard</p></div>
+          </div>
+          <div class="qa-item" onclick="loadInfo()">
+            <div class="qa-icon blue"><span class="ms">refresh</span></div>
+            <div class="qa-text"><h4>Refresh Data</h4><p>โหลดข้อมูลใหม่ทันที</p></div>
+          </div>
+          <div class="qa-item">
+            <div class="qa-icon purple"><span class="ms">monitoring</span></div>
+            <div class="qa-text"><h4>Server Metrics</h4><p>ดูสถิติการใช้งาน Server</p></div>
+            <span class="qa-badge new">New</span>
+          </div>
+        </div>
+
+        <div class="section-title" style="margin-top:16px">Activity</div>
+        <div class="activity-card" id="activity-feed">
+          <div class="act-item"><div class="act-dot green"></div><div class="act-info"><h4>Server Started</h4><p>X-Server เริ่มทำงาน</p></div></div>
+          <div class="act-item"><div class="act-dot blue"></div><div class="act-info"><h4>Dashboard Ready</h4><p>Dashboard พร้อมใช้งานที่ Port 3000</p></div></div>
+          <div class="act-item"><div class="act-dot green"></div><div class="act-info"><h4>Control Panel Ready</h4><p>Control Panel พร้อมใช้งานที่ Port 3001</p></div></div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
+
 <script>
 const prefersDark=window.matchMedia('(prefers-color-scheme:dark)').matches;
 const saved=localStorage.getItem('x-ctrl-theme');
 if(saved==='dark'||(!saved&&prefersDark))document.body.classList.add('dark');
-updIcon();
-function toggleTheme(){document.body.classList.toggle('dark');
-  localStorage.setItem('x-ctrl-theme',document.body.classList.contains('dark')?'dark':'light');updIcon()}
-function updIcon(){document.getElementById('theme-icon').textContent=document.body.classList.contains('dark')?'light_mode':'dark_mode'}
+updIcons();
+
+function toggleTheme(){
+  document.body.classList.toggle('dark');
+  localStorage.setItem('x-ctrl-theme',document.body.classList.contains('dark')?'dark':'light');
+  updIcons();
+}
+function updIcons(){
+  const icon=document.body.classList.contains('dark')?'light_mode':'dark_mode';
+  document.getElementById('theme-icon').textContent=icon;
+  document.getElementById('theme-icon2').textContent=icon;
+}
+
+// Greeting
+const h=new Date().getHours();
+const g=h<12?'Good Morning':'Good Afternoon';
+document.getElementById('greeting-text').textContent=g+'!';
 
 async function loadInfo(){try{
   const res=await fetch('/api/server-info');const d=await res.json();
   document.getElementById('ver').textContent='v'+d.version;
   document.getElementById('latest-ea').textContent=d.latest_ea_version||'-';
-  document.getElementById('latest-ea').className='stat-value ok';
   document.getElementById('ea-count').textContent=d.connections.length;
+  document.getElementById('notif-count').textContent=d.connections.length;
+
   const tbody=document.getElementById('mt5-body');
-  if(d.connections.length===0){tbody.innerHTML='<tr><td colspan="7" class="empty">ไม่มี EA เชื่อมต่อ</td></tr>';}
-  else{tbody.innerHTML=d.connections.map(c=>{
-    const pc=c.profit>=0?'profit-pos':'profit-neg';
-    const vc=(d.latest_ea_version&&c.ea_version!==d.latest_ea_version)?'ver-warn':'ver-ok';
-    return `<tr><td>${c.account}</td><td>${c.symbol}</td><td>${c.ea_name}</td>
-      <td class="${vc}">${c.ea_version}</td><td>$${c.equity.toFixed(2)}</td>
-      <td class="${pc}">$${c.profit.toFixed(2)}</td><td>${c.orders}</td></tr>`;}).join('');}
+  if(d.connections.length===0){
+    tbody.innerHTML='<tr><td colspan="7" class="empty-row">ไม่มี EA เชื่อมต่อ</td></tr>';
+  } else {
+    tbody.innerHTML=d.connections.map(c=>{
+      const pc=c.profit>=0?'profit-pos':'profit-neg';
+      const vc=(d.latest_ea_version&&c.ea_version!==d.latest_ea_version);
+      const badge=vc?'<span class="status-badge warn">'+c.ea_version+'</span>':'<span class="status-badge active">'+c.ea_version+'</span>';
+      return `<tr><td>${c.account}</td><td>${c.symbol}</td><td>${c.ea_name}</td>
+        <td>${badge}</td><td>$${c.equity.toFixed(2)}</td>
+        <td class="${pc}">$${c.profit.toFixed(2)}</td><td>${c.orders}</td></tr>`;
+    }).join('');
+  }
 }catch(e){console.error(e)}}
 
-async function updateEA(){document.getElementById('action-status').textContent='⏳ กำลังอัพเดท EA...';
-  try{const res=await fetch('/api/trigger-ea-update',{method:'POST'});const d=await res.json();
-    document.getElementById('action-status').textContent='✅ '+d.message;}
-  catch(e){document.getElementById('action-status').textContent='❌ ล้มเหลว: '+e.message;}}
+async function updateEA(){
+  document.getElementById('action-status').textContent='⏳ กำลังอัพเดท EA...';
+  // Add activity
+  const feed=document.getElementById('activity-feed');
+  feed.insertAdjacentHTML('afterbegin','<div class="act-item"><div class="act-dot orange"></div><div class="act-info"><h4>EA Update</h4><p>ส่งคำสั่งอัพเดท EA...</p></div></div>');
+  try{
+    const res=await fetch('/api/trigger-ea-update',{method:'POST'});const d=await res.json();
+    document.getElementById('action-status').textContent='✅ '+d.message;
+    feed.insertAdjacentHTML('afterbegin','<div class="act-item"><div class="act-dot green"></div><div class="act-info"><h4>Update Success</h4><p>'+d.message+'</p></div></div>');
+  }catch(e){
+    document.getElementById('action-status').textContent='❌ ล้มเหลว: '+e.message;
+    feed.insertAdjacentHTML('afterbegin','<div class="act-item"><div class="act-dot red"></div><div class="act-info"><h4>Update Failed</h4><p>'+e.message+'</p></div></div>');
+  }
+}
 loadInfo();setInterval(loadInfo,3000);
 </script>
 </body>
