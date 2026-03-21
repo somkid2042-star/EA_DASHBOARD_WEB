@@ -940,125 +940,153 @@ async fn serve_control_page() -> impl IntoResponse {
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>X-Server Control Panel</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>X-Server Control</title>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-* { margin: 0; padding: 0; box-sizing: border-box; }
 :root {
-  --bg: #0a0a1a; --card: rgba(20,20,40,0.9); --accent: #6c63ff;
-  --success: #00e676; --danger: #ff5252; --warning: #ffab40;
-  --text: #e8e8f0; --dim: #8888aa; --border: rgba(108,99,255,0.2);
+  --primary-blue:#4A90E2;--bg-color:#F5F7FA;--card-bg:#FFFFFF;--text-main:#333333;
+  --text-muted:#8E8E93;--border-color:#E5E5EA;--success:#34C759;--danger:#FF3B30;
+  --warning:#FF9500;--input-bg:#F2F2F7;
 }
-body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-.bg { position: fixed; top:0; left:0; width:100%; height:100%; z-index:0;
-  background: radial-gradient(ellipse at 20% 50%, rgba(108,99,255,0.08) 0%, transparent 50%),
-              radial-gradient(ellipse at 80% 20%, rgba(0,230,118,0.06) 0%, transparent 50%); }
-.container { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 30px 20px; }
-.header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 1px solid var(--border); }
-.header h1 { font-size: 24px; font-weight: 700; background: linear-gradient(135deg, #6c63ff, #00e676); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-.header .ver { font-size: 13px; color: var(--dim); background: rgba(108,99,255,0.1); padding: 4px 12px; border-radius: 12px; border: 1px solid var(--border); }
-.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; backdrop-filter: blur(10px); }
-.card h2 { font-size: 16px; font-weight: 600; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
-.card h2 .icon { font-size: 18px; }
-.status-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
-.status-row:last-child { border-bottom: none; }
-.status-row .label { color: var(--dim); font-size: 13px; }
-.status-row .value { font-size: 13px; font-weight: 500; }
-.status-row .value.ok { color: var(--success); }
-.status-row .value.warn { color: var(--warning); }
-.status-row .value.err { color: var(--danger); }
-.mt5-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.mt5-table th { text-align: left; padding: 8px; color: var(--dim); font-weight: 500; border-bottom: 1px solid var(--border); }
-.mt5-table td { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.03); }
-.mt5-table tr:hover td { background: rgba(108,99,255,0.05); }
-.profit-pos { color: var(--success); } .profit-neg { color: var(--danger); }
-btn, .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif; }
-.btn-primary { background: linear-gradient(135deg, #6c63ff, #5a52e0); color: white; }
-.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(108,99,255,0.3); }
-.btn-success { background: rgba(0,230,118,0.15); color: var(--success); border: 1px solid rgba(0,230,118,0.3); }
-.btn-danger { background: rgba(255,82,82,0.15); color: var(--danger); border: 1px solid rgba(255,82,82,0.3); }
-.actions { display: flex; gap: 10px; flex-wrap: wrap; }
-.empty { text-align: center; padding: 20px; color: var(--dim); font-size: 13px; }
-@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
-.card { animation: fadeIn 0.4s ease-out; }
+.dark {
+  --primary-blue:#64D2FF;--bg-color:#000000;--card-bg:#1C1C1E;--text-main:#F2F2F7;
+  --text-muted:#98989D;--border-color:#38383A;--success:#30D158;--danger:#FF453A;
+  --warning:#FF9F0A;--input-bg:#2C2C2E;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Kanit',sans-serif;background:var(--bg-color);color:var(--text-main);
+  display:flex;justify-content:center;min-height:100vh;transition:background-color .3s,color .3s}
+.app{width:100%;max-width:600px;background:var(--bg-color);min-height:100vh;display:flex;flex-direction:column;
+  box-shadow:0 0 20px rgba(0,0,0,.1)}
+.ms{font-family:'Material Symbols Rounded';font-weight:normal;font-size:20px;vertical-align:middle}
+
+.header{background:var(--card-bg);padding:14px 16px;display:flex;align-items:center;
+  justify-content:space-between;position:sticky;top:0;z-index:10;
+  box-shadow:0 1px 4px rgba(0,0,0,.08);transition:background-color .3s}
+.header-left{display:flex;align-items:center;gap:10px}
+.header-title{font-size:18px;font-weight:500}
+.header-ver{font-size:12px;color:var(--text-muted);background:var(--input-bg);
+  padding:3px 10px;border-radius:12px;border:1px solid var(--border-color);font-weight:400}
+.status-dot{width:10px;height:10px;background:var(--success);border-radius:50%;
+  box-shadow:0 0 0 3px rgba(0,210,122,.2);animation:pulse 2s infinite}
+@keyframes pulse{0%{transform:scale(.95);box-shadow:0 0 0 0 rgba(0,210,122,.4)}
+  70%{transform:scale(1);box-shadow:0 0 0 6px rgba(0,210,122,0)}
+  100%{transform:scale(.95);box-shadow:0 0 0 0 rgba(0,210,122,0)}}
+.theme-btn{background:none;border:none;cursor:pointer;color:var(--text-muted);
+  padding:6px;border-radius:8px;transition:background .2s;display:flex;align-items:center}
+.theme-btn:hover{background:var(--input-bg)}
+
+.content{padding:16px;flex:1;overflow-y:auto}
+.card{background:var(--card-bg);border-radius:16px;padding:16px;margin-bottom:14px;
+  border:1px solid var(--border-color);transition:background-color .3s}
+.card-title{font-size:15px;font-weight:500;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.card-title .ms{color:var(--primary-blue)}
+
+.status-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat-item{background:var(--input-bg);border-radius:12px;padding:14px;
+  border:1px solid var(--border-color);transition:background .3s}
+.stat-label{font-size:11px;color:var(--text-muted);font-weight:400;margin-bottom:4px}
+.stat-value{font-size:18px;font-weight:500;letter-spacing:-.3px}
+.stat-value.ok{color:var(--success)}
+
+.mt5-table{width:100%;border-collapse:collapse;font-size:13px}
+.mt5-table th{text-align:left;padding:10px 8px;color:var(--text-muted);font-weight:400;
+  font-size:11px;border-bottom:1px solid var(--border-color);text-transform:uppercase;letter-spacing:.5px}
+.mt5-table td{padding:12px 8px;border-bottom:1px solid var(--border-color);font-weight:400}
+.mt5-table tr:last-child td{border-bottom:none}
+.mt5-table tr:hover td{background:var(--input-bg)}
+.profit-pos{color:var(--success);font-weight:500}
+.profit-neg{color:var(--danger);font-weight:500}
+.ver-ok{color:var(--success)} .ver-warn{color:var(--warning)}
+.empty{text-align:center;padding:24px;color:var(--text-muted);font-size:13px}
+
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:12px 20px;border:none;
+  border-radius:12px;font-size:14px;font-weight:400;cursor:pointer;
+  transition:all .2s;font-family:'Kanit',sans-serif}
+.btn:active{transform:scale(.97)}
+.btn-update{background:var(--primary-blue);color:white}
+.btn-update:hover{opacity:.9}
+.btn-dash{background:rgba(52,199,89,.12);color:var(--success);border:1px solid rgba(52,199,89,.2)}
+.btn-dash:hover{background:rgba(52,199,89,.2)}
+.action-msg{margin-top:10px;font-size:13px;color:var(--text-muted)}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.card:nth-child(1){animation:fadeUp .3s ease-out}
+.card:nth-child(2){animation:fadeUp .3s ease-out .06s both}
+.card:nth-child(3){animation:fadeUp .3s ease-out .12s both}
 </style>
 </head>
 <body>
-<div class="bg"></div>
-<div class="container">
+<div class="app">
   <div class="header">
-    <h1>X-Server Control Panel</h1>
-    <span class="ver" id="ver">Loading...</span>
-  </div>
-
-  <div class="card">
-    <h2><span class="icon">⚡</span> Server Status</h2>
-    <div class="status-row"><span class="label">Dashboard (Port 3000)</span><span class="value ok" id="dash-status">●  Running</span></div>
-    <div class="status-row"><span class="label">Control Panel (Port 3001)</span><span class="value ok">●  Running</span></div>
-    <div class="status-row"><span class="label">Latest EA Version</span><span class="value" id="latest-ea">-</span></div>
-    <div class="status-row"><span class="label">Connected EAs</span><span class="value" id="ea-count">0</span></div>
-  </div>
-
-  <div class="card">
-    <h2><span class="icon">📊</span> Connected MT5 Instances</h2>
-    <table class="mt5-table">
-      <thead><tr><th>Account</th><th>Symbol</th><th>EA</th><th>Version</th><th>Equity</th><th>Profit</th><th>Orders</th></tr></thead>
-      <tbody id="mt5-body"><tr><td colspan="7" class="empty">No MT5 EAs Connected</td></tr></tbody>
-    </table>
-  </div>
-
-  <div class="card">
-    <h2><span class="icon">🔧</span> Actions</h2>
-    <div class="actions">
-      <button class="btn btn-primary" onclick="updateEA()">🔄 Update EA</button>
-      <button class="btn btn-success" onclick="window.open('http://localhost:3000','_blank')">📊 Open Dashboard</button>
+    <div class="header-left">
+      <div class="status-dot"></div>
+      <span class="header-title">Server Control</span>
+      <span class="header-ver" id="ver">...</span>
     </div>
-    <div id="action-status" style="margin-top:12px;font-size:13px;color:var(--dim);"></div>
+    <button class="theme-btn" onclick="toggleTheme()"><span class="ms" id="theme-icon">dark_mode</span></button>
+  </div>
+  <div class="content">
+    <div class="card">
+      <div class="card-title"><span class="ms">bolt</span> สถานะเซิร์ฟเวอร์</div>
+      <div class="status-grid">
+        <div class="stat-item"><div class="stat-label">Dashboard</div><div class="stat-value ok">● Running</div></div>
+        <div class="stat-item"><div class="stat-label">Control Panel</div><div class="stat-value ok">● Running</div></div>
+        <div class="stat-item"><div class="stat-label">EA Version</div><div class="stat-value" id="latest-ea">-</div></div>
+        <div class="stat-item"><div class="stat-label">EA เชื่อมต่อ</div><div class="stat-value" id="ea-count">0</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ms">monitoring</span> MT5 Instances</div>
+      <table class="mt5-table">
+        <thead><tr><th>Account</th><th>Symbol</th><th>EA</th><th>Ver</th><th>Equity</th><th>Profit</th><th>Orders</th></tr></thead>
+        <tbody id="mt5-body"><tr><td colspan="7" class="empty">ไม่มี EA เชื่อมต่อ</td></tr></tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ms">settings</span> Actions</div>
+      <div class="actions">
+        <button class="btn btn-update" onclick="updateEA()"><span class="ms" style="font-size:18px">system_update</span> Update EA</button>
+        <button class="btn btn-dash" onclick="window.open('https://xea.dpdns.org','_blank')"><span class="ms" style="font-size:18px">dashboard</span> Open Dashboard</button>
+      </div>
+      <div class="action-msg" id="action-status"></div>
+    </div>
   </div>
 </div>
-
 <script>
-async function loadInfo() {
-  try {
-    const res = await fetch('/api/server-info');
-    const d = await res.json();
-    document.getElementById('ver').textContent = 'v' + d.version;
-    document.getElementById('latest-ea').textContent = d.latest_ea_version || '-';
-    document.getElementById('latest-ea').className = 'value ok';
-    document.getElementById('ea-count').textContent = d.connections.length;
-    
-    const tbody = document.getElementById('mt5-body');
-    if (d.connections.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" class="empty">No MT5 EAs Connected</td></tr>';
-    } else {
-      tbody.innerHTML = d.connections.map(c => {
-        const profitClass = c.profit >= 0 ? 'profit-pos' : 'profit-neg';
-        const verClass = (d.latest_ea_version && c.ea_version !== d.latest_ea_version) ? 'warn' : 'ok';
-        return `<tr>
-          <td>${c.account}</td><td>${c.symbol}</td><td>${c.ea_name}</td>
-          <td class="${verClass}">${c.ea_version}</td>
-          <td>$${c.equity.toFixed(2)}</td>
-          <td class="${profitClass}">$${c.profit.toFixed(2)}</td>
-          <td>${c.orders}</td></tr>`;
-      }).join('');
-    }
-  } catch(e) { console.error(e); }
-}
+const prefersDark=window.matchMedia('(prefers-color-scheme:dark)').matches;
+const saved=localStorage.getItem('x-ctrl-theme');
+if(saved==='dark'||(!saved&&prefersDark))document.body.classList.add('dark');
+updIcon();
+function toggleTheme(){document.body.classList.toggle('dark');
+  localStorage.setItem('x-ctrl-theme',document.body.classList.contains('dark')?'dark':'light');updIcon()}
+function updIcon(){document.getElementById('theme-icon').textContent=document.body.classList.contains('dark')?'light_mode':'dark_mode'}
 
-async function updateEA() {
-  document.getElementById('action-status').textContent = '⏳ Triggering EA update...';
-  try {
-    const res = await fetch('/api/trigger-ea-update', { method: 'POST' });
-    const d = await res.json();
-    document.getElementById('action-status').textContent = '✅ ' + d.message;
-  } catch(e) {
-    document.getElementById('action-status').textContent = '❌ Failed: ' + e.message;
-  }
-}
+async function loadInfo(){try{
+  const res=await fetch('/api/server-info');const d=await res.json();
+  document.getElementById('ver').textContent='v'+d.version;
+  document.getElementById('latest-ea').textContent=d.latest_ea_version||'-';
+  document.getElementById('latest-ea').className='stat-value ok';
+  document.getElementById('ea-count').textContent=d.connections.length;
+  const tbody=document.getElementById('mt5-body');
+  if(d.connections.length===0){tbody.innerHTML='<tr><td colspan="7" class="empty">ไม่มี EA เชื่อมต่อ</td></tr>';}
+  else{tbody.innerHTML=d.connections.map(c=>{
+    const pc=c.profit>=0?'profit-pos':'profit-neg';
+    const vc=(d.latest_ea_version&&c.ea_version!==d.latest_ea_version)?'ver-warn':'ver-ok';
+    return `<tr><td>${c.account}</td><td>${c.symbol}</td><td>${c.ea_name}</td>
+      <td class="${vc}">${c.ea_version}</td><td>$${c.equity.toFixed(2)}</td>
+      <td class="${pc}">$${c.profit.toFixed(2)}</td><td>${c.orders}</td></tr>`;}).join('');}
+}catch(e){console.error(e)}}
 
-loadInfo();
-setInterval(loadInfo, 3000);
+async function updateEA(){document.getElementById('action-status').textContent='⏳ กำลังอัพเดท EA...';
+  try{const res=await fetch('/api/trigger-ea-update',{method:'POST'});const d=await res.json();
+    document.getElementById('action-status').textContent='✅ '+d.message;}
+  catch(e){document.getElementById('action-status').textContent='❌ ล้มเหลว: '+e.message;}}
+loadInfo();setInterval(loadInfo,3000);
 </script>
 </body>
 </html>"##;
